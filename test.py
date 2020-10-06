@@ -309,7 +309,6 @@ class App:
 
                 final = np.hstack((vis, merged, thold1, thold2))
                 # final = cv2.rotate(final, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
                 cv2.imshow("frame", final)
 
             # waitkey

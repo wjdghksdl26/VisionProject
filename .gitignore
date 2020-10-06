@@ -1,4 +1,5 @@
 videos/
+.idea/
 *.mp4
 *.MP4
 *.mov

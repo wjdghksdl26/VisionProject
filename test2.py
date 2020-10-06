@@ -332,6 +332,7 @@ class App:
             totalFPS += FPS
             print("FPS : ", "%.1f" % round(FPS, 3))
 
+        # terminate
         self.vid.release()
         print("Average FPS :", round(totalFPS/self.frame_idx, 1))
 

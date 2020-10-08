@@ -3,7 +3,6 @@ import imutils
 import numpy as np
 import argparse
 import time
-import matplotlib.pyplot as plt
 from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
 
@@ -26,7 +25,7 @@ np.set_printoptions(precision=3, suppress=True)
 class App:
     def __init__(self, videoPath):
         self.track_len = 10
-        self.detect_interval = 5
+        self.detect_interval = 3
         self.mask_size = 100
         self.tracks = []
         self.vid = cv2.VideoCapture(videoPath)
@@ -69,15 +68,10 @@ class App:
 
         # performance index variables
         totalFPS = 0
-        HMatQidx = [[], []]
-        samples = [np.array([[30], [30], [1]]), np.array([[30], [60], [1]]),
-                   np.array([[60], [30], [1]]), np.array([[60], [60], [1]])]
-        noiselist = []
-        fplist = []
 
         #kernel for morphology operations
         kernel = np.ones((3, 3))
-        # kernel2 = np.ones((2, 2))
+        kernel2 = np.ones((2, 2))
 
         # main loop
         while True:
@@ -122,37 +116,36 @@ class App:
 
                     print("Frame", self.frame_idx)
 
-                    # HMat quality index
-                    total = 0
-                    for s in samples:
-                        total += np.linalg.norm(np.dot(HMat3to2, s) - s)
-                    HMatQidx[0].append(self.frame_idx)
-                    HMatQidx[1].append(np.sqrt(total))
-
                     # warping operation
                     warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
                     warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h), cv2.INTER_LINEAR)
 
                     # Gaussian blur operation to ease impact of edges
-                    warped1to2 = cv2.GaussianBlur(warped1to2, (3, 3), 0)
-                    warped3to2 = cv2.GaussianBlur(warped3to2, (3, 3), 0)
-                    img2 = cv2.GaussianBlur(img2, (3, 3), 0)
+                    # parameter tuning required
+                    warped1to2 = cv2.GaussianBlur(warped1to2, (9, 9), 0)
+                    warped3to2 = cv2.GaussianBlur(warped3to2, (9, 9), 0)
+                    img2 = cv2.GaussianBlur(img2, (9, 9), 0)
 
                     # subtracted images
-                    subt21 = subtract_images(img2, warped1to2, clip=0, isColor=False).astype('int32')
-                    subt23 = subtract_images(img2, warped3to2, clip=0, isColor=False).astype('int32')
+                    subt21 = subtract_images(img2, warped1to2, clip=10, isColor=False)
+                    subt23 = subtract_images(img2, warped3to2, clip=10, isColor=False)
 
                     # merge subtracted images
-                    # subt21 = np.where(subt21 <= 25, 0, subt21)
-                    # subt23 = np.where(subt23 <= 25, 0, subt23)
                     subt21 = subt21[20:h - 20, 20:w - 20]
                     subt23 = subt23[20:h - 20, 20:w - 20]
+                    subt21 = cv2.dilate(subt21, kernel, iterations=3).astype('int32')
+                    subt23 = cv2.dilate(subt23, kernel, iterations=3).astype('int32')
                     merged = (subt21 + subt23) / 2
+                    subt21 = subt21.astype('uint8')
+                    subt23 = subt23.astype('uint8')
                     merged = np.where(merged <= 40, 0, merged)
                     merged = merged.astype('uint8')
+                    m = merged.copy()
                     merged = cv2.equalizeHist(merged)
 
-                    # crude thresholding 1
+                    # ---------- essential operations finished ----------
+
+                    # crude thresholding type 1
                     thold1 = merged.copy()
                     # thold1 = cv2.morphologyEx(thold1, cv2.MORPH_OPEN, np.ones((2, 2)), iterations=1)
                     # thold1 = cv2.erode(thold1, (2, 2), iterations=1)
@@ -162,11 +155,9 @@ class App:
                     thold1 = cv2.erode(thold1, kernel, iterations=1)
                     thold1 = cv2.dilate(thold1, kernel, iterations=10)
 
-                    # crude thresholding 2
-                    subt21 = subt21.astype('uint8')
-                    subt23 = subt23.astype('uint8')
-                    # subt21 = cv2.equalizeHist(subt21)
-                    # subt23 = cv2.equalizeHist(subt23)
+                    # crude thresholding type 2
+                    s21 = subt21.copy()
+                    s23 = subt23.copy()
                     _, subt21 = cv2.threshold(subt21, 30, 255, cv2.THRESH_BINARY)
                     _, subt23 = cv2.threshold(subt23, 30, 255, cv2.THRESH_BINARY)
                     subt21 = cv2.erode(subt21, kernel, iterations=1)
@@ -177,16 +168,9 @@ class App:
                     thold2 = cv2.erode(thold2, kernel, iterations=1)
                     thold2 = cv2.dilate(thold2, kernel, iterations=3)
 
-                    # performance index
-                    # noisecalc = merged[20:h - 20, 20:w - 20]
-                    noisecalc = merged
-                    noise = np.sum(noisecalc)
-                    noiselist.append(noise)
-                    fplist.append(len(self.tracks))
-
                     # draw flow
                     merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
-                    cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
+                    # cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                 # in case of motion compensation failure
                 if len(dst23) < 12:
@@ -308,6 +292,7 @@ class App:
 
 
                 final = np.hstack((vis, merged, thold1, thold2))
+                # final = np.hstack((s21, s23, m))
                 # final = cv2.rotate(final, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 cv2.imshow("frame", final)
 
@@ -334,32 +319,6 @@ class App:
         # terminate
         self.vid.release()
         print("Average FPS :", round(totalFPS/self.frame_idx, 1))
-
-        # plot performance index
-        plt.subplot(131)
-        plt.plot(HMatQidx[0], HMatQidx[1])
-        plt.xlabel('Frame')
-        plt.ylabel('HMat Index')
-        plt.title('Homography Matrix Index')
-        plt.ylim(0, 100)
-
-        plt.subplot(132)
-        plt.plot(HMatQidx[0], noiselist)
-        plt.xlabel('Frame')
-        plt.ylabel('Noise')
-        plt.title('Noise Per Frame')
-        plt.ylim(0, 100000)
-
-        plt.subplot(133)
-        plt.plot(HMatQidx[0], fplist)
-        plt.xlabel('Frame')
-        plt.ylabel('Feature Points')
-        plt.title('Feature Point Per Frame')
-        plt.ylim(0, 100)
-
-        plt.show()
-
-        return HMatQidx[0], HMatQidx[1], noiselist, fplist
 
 
 a = App(video)

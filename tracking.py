@@ -264,6 +264,8 @@ class App:
                 h1 = imutils.resize(h1, height=h-40)
                 h1 = cv2.cvtColor(h1, cv2.COLOR_GRAY2BGR)
 
+                thold1 = cv2.copyMakeBorder(thold1, 3, 3, 3, 3, cv2.BORDER_CONSTANT, 0)
+                thold1 = imutils.resize(thold1, height=h-40)
 
                 kpt = cv2.cvtColor(thold1, cv2.COLOR_BGR2GRAY)
                 kpt_inv = cv2.bitwise_not(kpt)
@@ -271,16 +273,20 @@ class App:
                 params.minThreshold = 0
                 params.maxThreshold = 255
                 params.filterByArea = True
-                params.minArea = 15
-                params.filterByInertia = True
-                params.minInertiaRatio = 0.1
+                params.minArea = 5
+                params.filterByInertia = False
                 params.filterByColor = True
                 params.blobColor = 0
                 params.filterByCircularity = False
                 params.filterByConvexity = False
-                params.minConvexity = 0.5
                 detector = cv2.SimpleBlobDetector_create(params)
                 kpts = detector.detect(kpt_inv)
+                if len(kpts) > 0:
+                    ls = []
+                    for i in range(len(kpts)):
+                        ls.append(kpts[i].pt)
+                    print(ls)
+                    
                 vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                 thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),

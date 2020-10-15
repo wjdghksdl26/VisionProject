@@ -30,18 +30,19 @@ class App:
         self.tracks = []
         self.vid = cv2.VideoCapture(videoPath)
         self.frame_idx = 0
+        self.rotate = cv2.ROTATE_90_CLOCKWISE
 
     def run(self):
         # images for initialization
         ret, frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        frame1 = imutils.resize(frame1, height=300)
-        frame1 = cv2.rotate(frame1, cv2.ROTATE_90_CLOCKWISE)
+        frame1 = imutils.resize(frame1, height=400)
+        frame1 = cv2.rotate(frame1, self.rotate)
 
         ret, frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        frame2 = imutils.resize(frame2, height=300)
-        frame2 = cv2.rotate(frame2, cv2.ROTATE_90_CLOCKWISE)
+        frame2 = imutils.resize(frame2, height=400)
+        frame2 = cv2.rotate(frame2, self.rotate)
 
         # video size
         h, w = frame1.shape
@@ -50,8 +51,8 @@ class App:
         x1 = self.mask_size
         x2 = w - self.mask_size
         y1 = self.mask_size
-        y2 = int(h / 2 - self.mask_size / 2)
-        y3 = int(h / 2 + self.mask_size / 2)
+        y2 = int(h/2 - self.mask_size/2)
+        y3 = int(h/2 + self.mask_size/2)
         y4 = h - self.mask_size
         mask1 = np.zeros_like(frame1)
         mask1[0:y1, 0:x1] = 1
@@ -82,16 +83,15 @@ class App:
             if not ret:
                 print("End of video stream!")
                 break
+
+            # original frame
             vis = frame3.copy()
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
-            frame3 = imutils.resize(frame3, height=300)
-            frame3 = cv2.rotate(frame3, cv2.ROTATE_90_CLOCKWISE)
+            frame3 = imutils.resize(frame3, height=400)
+            frame3 = cv2.rotate(frame3, self.rotate)
 
-            vis = imutils.resize(vis, height=300)
-            vis = cv2.rotate(vis, cv2.ROTATE_90_CLOCKWISE)
-
-            hsv = cv2.cvtColor(vis, cv2.COLOR_BGR2HSV)
-            h1, s1, v1 = cv2.split(hsv)
+            vis = imutils.resize(vis, height=400)
+            vis = cv2.rotate(vis, self.rotate)
 
             # begin motion estimation
             if self.frame_idx > 0:
@@ -114,6 +114,7 @@ class App:
                     # Homography Mat. that warps img3 to fit img2
                     HMat3to2, stat = cv2.findHomography(src23, dst23, 0, 5.0)
 
+                    # current frame
                     print("Frame", self.frame_idx)
 
                     # warping operation
@@ -149,7 +150,7 @@ class App:
                     thold1 = merged.copy()
                     thold1 = cv2.erode(thold1, kernel, iterations=1)
                     _, thold1 = cv2.threshold(thold1, 30, 255, cv2.THRESH_BINARY)
-                    thold1 = cv2.dilate(thold1, kernel, iterations=3)
+                    thold1 = cv2.dilate(thold1, kernel, iterations=5)
 
                     # crude thresholding type 2
                     s21 = subt21.copy()
@@ -169,7 +170,7 @@ class App:
                     # cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                 # in case of motion compensation failure
-                if len(dst23) < 12:
+                if len(dst23) < 6:
                     print("Motion Compensation Failure!")
                     subt21 = subtract_images(img2, img1, clip=0, isColor=False)
                     subt23 = subtract_images(img2, img3, clip=0, isColor=False)
@@ -184,7 +185,6 @@ class App:
                     _, subt23 = cv2.threshold(subt23, 30, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.bitwise_and(subt21, subt23)
                     thold2 = thold1
-                    cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
             # search feature points
             if self.frame_idx % self.detect_interval == 0:
@@ -261,10 +261,6 @@ class App:
                 thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
                 thold2 = cv2.cvtColor(thold2, cv2.COLOR_GRAY2BGR)
 
-                h1 = imutils.resize(h1, height=h-40)
-                h1 = cv2.cvtColor(h1, cv2.COLOR_GRAY2BGR)
-
-
                 kpt = cv2.cvtColor(thold1, cv2.COLOR_BGR2GRAY)
                 kpt_inv = cv2.bitwise_not(kpt)
                 params = cv2.SimpleBlobDetector_Params()
@@ -274,13 +270,22 @@ class App:
                 params.minArea = 15
                 params.filterByInertia = True
                 params.minInertiaRatio = 0.1
-                params.filterByColor = True
+                params.filterByColor = False
                 params.blobColor = 0
                 params.filterByCircularity = False
                 params.filterByConvexity = False
                 params.minConvexity = 0.5
                 detector = cv2.SimpleBlobDetector_create(params)
                 kpts = detector.detect(kpt_inv)
+                
+                if len(kpts) > 0:
+                    ls = []
+                    for i in range(len(kpts)):
+                        ls.append(kpts[i].size)
+                        if ls[-1] > 50:
+                            cv2.putText(thold1, "Avoid!!", (200, 600), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
+                            cv2.putText(thold1, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+
                 vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                 thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),
@@ -293,7 +298,7 @@ class App:
                 cv2.imshow("frame", final)
 
             # waitkey
-            k = cv2.waitKey(0) & 0xFF
+            k = cv2.waitKey(1) & 0xFF
 
             # pixel-level inspection
             if k == ord("s"):

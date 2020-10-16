@@ -115,7 +115,7 @@ class App:
                     HMat3to2, stat = cv2.findHomography(src23, dst23, 0, 5.0)
 
                     # current frame
-                    print("Frame", self.frame_idx)
+                    # print("Frame", self.frame_idx)
 
                     # warping operation
                     warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
@@ -268,7 +268,7 @@ class App:
                 params.maxThreshold = 255
                 params.filterByArea = True
                 params.minArea = 15
-                params.filterByInertia = True
+                params.filterByInertia = False
                 params.minInertiaRatio = 0.1
                 params.filterByColor = False
                 params.blobColor = 0
@@ -282,9 +282,10 @@ class App:
                     ls = []
                     for i in range(len(kpts)):
                         ls.append(kpts[i].size)
-                        if ls[-1] > 50:
-                            cv2.putText(thold1, "Avoid!!", (200, 600), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
-                            cv2.putText(thold1, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                        if kpts[i].size > 20:
+                            print("Avoid!!")
+                            cv2.putText(vis, "Avoid!!", (200, 600), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
+                            cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
 
                 vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
@@ -315,7 +316,7 @@ class App:
             t_end = time.time()
             FPS = 1/(t_end-t_start+0.0001)
             totalFPS += FPS
-            print("FPS : ", "%.1f" % round(FPS, 3))
+            # print("FPS : ", "%.1f" % round(FPS, 3))
 
         # terminate
         self.vid.release()

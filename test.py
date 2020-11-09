@@ -3,7 +3,6 @@ import imutils
 import numpy as np
 import argparse
 import time
-import matplotlib.pyplot as plt
 from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
 
@@ -26,7 +25,7 @@ np.set_printoptions(precision=3, suppress=True)
 class App:
     def __init__(self, videoPath):
         self.track_len = 10
-        self.detect_interval = 5
+        self.detect_interval = 3
         self.mask_size = 100
         self.tracks = []
         self.vid = cv2.VideoCapture(videoPath)
@@ -312,7 +311,7 @@ class App:
                 cv2.imshow("frame", final)
 
             # waitkey
-            k = cv2.waitKey(0) & 0xFF
+            k = cv2.waitKey(1) & 0xFF
 
             # pixel-level inspection
             if k == ord("s"):
@@ -334,32 +333,6 @@ class App:
         # terminate
         self.vid.release()
         print("Average FPS :", round(totalFPS/self.frame_idx, 1))
-
-        # plot performance index
-        plt.subplot(131)
-        plt.plot(HMatQidx[0], HMatQidx[1])
-        plt.xlabel('Frame')
-        plt.ylabel('HMat Index')
-        plt.title('Homography Matrix Index')
-        plt.ylim(0, 100)
-
-        plt.subplot(132)
-        plt.plot(HMatQidx[0], noiselist)
-        plt.xlabel('Frame')
-        plt.ylabel('Noise')
-        plt.title('Noise Per Frame')
-        plt.ylim(0, 100000)
-
-        plt.subplot(133)
-        plt.plot(HMatQidx[0], fplist)
-        plt.xlabel('Frame')
-        plt.ylabel('Feature Points')
-        plt.title('Feature Point Per Frame')
-        plt.ylim(0, 100)
-
-        plt.show()
-
-        return HMatQidx[0], HMatQidx[1], noiselist, fplist
 
 
 a = App(video)

@@ -9,7 +9,7 @@ def opticalflow(img0, img1, tracks, params, track_length=10):
     if p1 is not None:
         p0r, st, err = cv2.calcOpticalFlowPyrLK(img1, img0, p1, None, **params)
         d = abs(p0 - p0r).reshape(-1, 2).max(-1)
-        good = d < 0.3
+        good = d < 0.7
         new_tracks = []
         for tr, (x, y), good_flag in zip(tracks, p1.reshape(-1, 2), good):
             if not good_flag:

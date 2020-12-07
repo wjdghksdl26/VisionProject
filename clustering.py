@@ -36,12 +36,12 @@ class App:
         # images for initialization
         ret, frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        frame1 = imutils.resize(frame1, height=400)
+        frame1 = imutils.resize(frame1, height=300)
         frame1 = cv2.rotate(frame1, self.rotate)
 
         ret, frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        frame2 = imutils.resize(frame2, height=400)
+        frame2 = imutils.resize(frame2, height=300)
         frame2 = cv2.rotate(frame2, self.rotate)
 
         # video size
@@ -87,10 +87,10 @@ class App:
             # original frame
             vis = frame3.copy()
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
-            frame3 = imutils.resize(frame3, height=400)
+            frame3 = imutils.resize(frame3, height=300)
             frame3 = cv2.rotate(frame3, self.rotate)
 
-            vis = imutils.resize(vis, height=400)
+            vis = imutils.resize(vis, height=300)
             vis = cv2.rotate(vis, self.rotate)
 
             # begin motion estimation

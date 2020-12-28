@@ -170,7 +170,7 @@ class App:
                     # cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                 # in case of motion compensation failure
-                if len(dst23) < 6:
+                if len(dst23) < 12:
                     print("Motion Compensation Failure!")
                     subt21 = subtract_images(img2, img1, clip=0, isColor=False)
                     subt23 = subtract_images(img2, img3, clip=0, isColor=False)
@@ -184,6 +184,7 @@ class App:
                     _, subt21 = cv2.threshold(subt21, 30, 255, cv2.THRESH_BINARY)
                     _, subt23 = cv2.threshold(subt23, 30, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.bitwise_and(subt21, subt23)
+                    thold1 = thold1.astype('uint8')
                     thold2 = thold1
 
             # search feature points
@@ -283,9 +284,10 @@ class App:
                     for i in range(len(kpts)):
                         ls.append(kpts[i].size)
                         if kpts[i].size > 20:
+                            print(kpts[i].size)
                             print("Avoid!!")
-                            cv2.putText(vis, "Avoid!!", (200, 600), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
-                            cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                            cv2.putText(vis, "Avoid!!", (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
+                            # cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
 
                 vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
@@ -293,7 +295,7 @@ class App:
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
 
-                final = np.hstack((vis, thold1, merged, thold2))
+                final = np.hstack((vis, merged, thold1, thold2))
                 # final = np.hstack((s21, s23, m))
                 # final = cv2.rotate(final, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 cv2.imshow("frame", final)

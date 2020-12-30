@@ -8,7 +8,7 @@ from imgops.get_optflow import opticalflow
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=7, qualityLevel=0.01, minDistance=7, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(9, 9), maxLevel=3, criteria=termination, minEigThreshold=1e-5)
+lk_params = dict(winSize=(9, 9), maxLevel=3, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)

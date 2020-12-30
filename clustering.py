@@ -7,8 +7,8 @@ from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
-feature_params = dict(maxCorners=7, qualityLevel=0.01, minDistance=7, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(9, 9), maxLevel=3, criteria=termination, minEigThreshold=1e-5)
+feature_params = dict(maxCorners=7, qualityLevel=0.1, minDistance=7, blockSize=7, useHarrisDetector=False)
+lk_params = dict(winSize=(9, 9), maxLevel=3, criteria=termination, minEigThreshold=1e-3)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
@@ -118,6 +118,8 @@ class App:
                     # print("Frame", self.frame_idx)
 
                     # warping operation
+                    print(img1)
+                    print(HMat1to2)
                     warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
                     warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h), cv2.INTER_LINEAR)
 

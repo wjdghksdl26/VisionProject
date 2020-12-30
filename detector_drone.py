@@ -14,8 +14,10 @@ from imgops.videostream import VideoStream
 
 # optical flow parameters
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
-feature_params = dict(maxCorners=7, qualityLevel=0.1, minDistance=7, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(9, 9), maxLevel=3, criteria=termination, minEigThreshold=1e-3)
+feature_params = dict(maxCorners=7, qualityLevel=0.1,
+                      minDistance=7, blockSize=7, useHarrisDetector=False)
+lk_params = dict(winSize=(9, 9), maxLevel=3,
+                 criteria=termination, minEigThreshold=1e-3)
 
 # parsing
 ap = argparse.ArgumentParser()
@@ -39,11 +41,12 @@ def image_callback(data):
     return cv_image
 '''
 
+
 class App:
     def __init__(self, videoPath):
         self.track_len = 10
         self.detect_interval = 3
-        self.mask_size = 100
+        self.mask_size = 70
         self.tracks = []
         self.vid = VideoStream(src=video).start()
         self.frame_idx = 0
@@ -54,8 +57,8 @@ class App:
         frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         h, w = frame1.shape
-        r = 300.0 / w
-        dim = (300, int(h * r))
+        r = 400.0 / w
+        dim = (400, int(h * r))
         frame1 = cv2.resize(frame1, dim)
         h, w = frame1.shape
         print(frame1.shape)
@@ -95,234 +98,268 @@ class App:
 
         # main loop
         while True:
-            t_start = time.time()
+            try:
+                t_start = time.time()
 
-            # read and process frame
-            frame3 = self.vid.read()
+                # read and process frame
+                frame3 = self.vid.read()
 
-            # original frame
-            vis = frame3.copy()
-            frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
-            frame3 = cv2.resize(frame3, dim)
-            # frame3 = cv2.rotate(frame3, self.rotate)
+                # original frame
+                vis = frame3.copy()
+                frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
+                frame3 = cv2.resize(frame3, dim)
+                # frame3 = cv2.rotate(frame3, self.rotate)
 
-            vis = cv2.resize(vis, dim)
-            # vis = cv2.rotate(vis, self.rotate)
+                vis = cv2.resize(vis, dim)
+                # vis = cv2.rotate(vis, self.rotate)
 
-            # begin motion estimation
-            if self.frame_idx > 0:
-                img1, img2, img3 = frame1, frame2, frame3
+                # begin motion estimation
+                if self.frame_idx > 0:
+                    img1, img2, img3 = frame1, frame2, frame3
 
-                # optical flow from img2 to img3
-                new_tracks = opticalflow(img2, img3, self.tracks, lk_params, track_length=self.track_len)
+                    # optical flow from img2 to img3
+                    new_tracks = opticalflow(
+                        img2, img3, self.tracks, lk_params, track_length=self.track_len)
 
-                # update track
-                self.tracks = new_tracks
+                    # update track
+                    self.tracks = new_tracks
 
-                # points in img3
-                src23 = np.float32([[list(tr[-1])] for tr in self.tracks])
-                # points in img2
-                dst23 = np.float32([[list(tr[-2])] for tr in self.tracks])
+                    # points in img3
+                    src23 = np.float32([[list(tr[-1])] for tr in self.tracks])
+                    # points in img2
+                    dst23 = np.float32([[list(tr[-2])] for tr in self.tracks])
 
-                if len(dst23) >= 12:
-                    # Homography Mat. that warps img1 to fit img2
-                    HMat1to2 = HMat3to2
-                    # Homography Mat. that warps img3 to fit img2
-                    HMat3to2, stat = cv2.findHomography(src23, dst23, 0, 5.0)
+                    if len(dst23) >= 12:
+                        # Homography Mat. that warps img1 to fit img2
+                        HMat1to2 = HMat3to2
+                        # Homography Mat. that warps img3 to fit img2
+                        HMat3to2, stat = cv2.findHomography(
+                            src23, dst23, 0, 5.0)
 
-                    # current frame
-                    print("Frame", self.frame_idx)
+                        # current frame
+                        print("Frame", self.frame_idx)
 
-                    # warping operation
-                    HMat1to2 = np.linalg.inv(HMat1to2)
-                    warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h))
-                    warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h))
+                        # warping operation
+                        HMat1to2 = np.linalg.inv(HMat1to2)
+                        warped1to2 = cv2.warpPerspective(
+                            img1, HMat1to2, (w, h))
+                        warped3to2 = cv2.warpPerspective(
+                            img3, HMat3to2, (w, h))
 
-                    # Gaussian blur operation to ease impact of edges
-                    # parameter tuning required
-                    warped1to2 = cv2.GaussianBlur(warped1to2, (9, 9), 0)
-                    warped3to2 = cv2.GaussianBlur(warped3to2, (9, 9), 0)
-                    img2 = cv2.GaussianBlur(img2, (9, 9), 0)
+                        # Gaussian blur operation to ease impact of edges
+                        # parameter tuning required
+                        warped1to2 = cv2.GaussianBlur(warped1to2, (9, 9), 0)
+                        warped3to2 = cv2.GaussianBlur(warped3to2, (9, 9), 0)
+                        img2 = cv2.GaussianBlur(img2, (9, 9), 0)
 
-                    # subtracted images
-                    subt21 = subtract_images(img2, warped1to2, clip=10, isColor=False)
-                    subt23 = subtract_images(img2, warped3to2, clip=10, isColor=False)
+                        # subtracted images
+                        subt21 = subtract_images(
+                            img2, warped1to2, clip=10, isColor=False)
+                        subt23 = subtract_images(
+                            img2, warped3to2, clip=10, isColor=False)
 
-                    # merge subtracted images
-                    subt21 = subt21[20:h - 20, 20:w - 20]
-                    subt23 = subt23[20:h - 20, 20:w - 20]
-                    subt21 = cv2.dilate(subt21, kernel, iterations=3).astype('int32')
-                    subt23 = cv2.dilate(subt23, kernel, iterations=3).astype('int32')
-                    merged = (subt21 + subt23) / 2
-                    subt21 = subt21.astype('uint8')
-                    subt23 = subt23.astype('uint8')
-                    merged = np.where(merged <= 40, 0, merged)
-                    merged = merged.astype('uint8')
-                    m = merged.copy()
-                    merged = cv2.equalizeHist(merged)
+                        # merge subtracted images
+                        subt21 = subt21[20:h - 20, 20:w - 20]
+                        subt23 = subt23[20:h - 20, 20:w - 20]
+                        subt21 = cv2.dilate(
+                            subt21, kernel, iterations=3).astype('int32')
+                        subt23 = cv2.dilate(
+                            subt23, kernel, iterations=3).astype('int32')
+                        merged = (subt21 + subt23) / 2
+                        subt21 = subt21.astype('uint8')
+                        subt23 = subt23.astype('uint8')
+                        merged = np.where(merged <= 40, 0, merged)
+                        merged = merged.astype('uint8')
+                        m = merged.copy()
+                        merged = cv2.equalizeHist(merged)
 
-                    # ---------- essential operations finished ----------
+                        # ---------- essential operations finished ----------
 
-                    # crude thresholding type 1
-                    thold1 = merged.copy()
-                    thold1 = cv2.erode(thold1, kernel, iterations=1)
-                    _, thold1 = cv2.threshold(thold1, 30, 255, cv2.THRESH_BINARY)
-                    thold1 = cv2.dilate(thold1, kernel, iterations=5)
+                        # crude thresholding type 1
+                        thold1 = merged.copy()
+                        thold1 = cv2.erode(thold1, kernel, iterations=1)
+                        _, thold1 = cv2.threshold(
+                            thold1, 30, 255, cv2.THRESH_BINARY)
+                        thold1 = cv2.dilate(thold1, kernel, iterations=5)
 
-                    '''
-                    # crude thresholding type 2
-                    s21 = subt21.copy()
-                    s23 = subt23.copy()
-                    _, subt21 = cv2.threshold(subt21, 30, 255, cv2.THRESH_BINARY)
-                    _, subt23 = cv2.threshold(subt23, 30, 255, cv2.THRESH_BINARY)
-                    subt21 = cv2.erode(subt21, kernel, iterations=1)
-                    subt23 = cv2.erode(subt23, kernel, iterations=1)
-                    subt21 = cv2.dilate(subt21, kernel, iterations=3)
-                    subt23 = cv2.dilate(subt23, kernel, iterations=3)
-                    thold2 = cv2.bitwise_and(subt21, subt23)
-                    thold2 = cv2.erode(thold2, kernel, iterations=1)
-                    thold2 = cv2.dilate(thold2, kernel, iterations=3)
-                    '''
+                        '''
+                        # crude thresholding type 2
+                        s21 = subt21.copy()
+                        s23 = subt23.copy()
+                        _, subt21 = cv2.threshold(subt21, 30, 255, cv2.THRESH_BINARY)
+                        _, subt23 = cv2.threshold(subt23, 30, 255, cv2.THRESH_BINARY)
+                        subt21 = cv2.erode(subt21, kernel, iterations=1)
+                        subt23 = cv2.erode(subt23, kernel, iterations=1)
+                        subt21 = cv2.dilate(subt21, kernel, iterations=3)
+                        subt23 = cv2.dilate(subt23, kernel, iterations=3)
+                        thold2 = cv2.bitwise_and(subt21, subt23)
+                        thold2 = cv2.erode(thold2, kernel, iterations=1)
+                        thold2 = cv2.dilate(thold2, kernel, iterations=3)
+                        '''
 
-                    # draw flow
-                    merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
-                    # cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
+                        # draw flow
+                        merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
+                        cv2.polylines(
+                            merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
-                # in case of motion compensation failure
-                if len(dst23) < 12:
-                    print("Motion Compensation Failure!")
-                    subt21 = subtract_images(img2, img1, clip=0, isColor=False)
-                    subt23 = subtract_images(img2, img3, clip=0, isColor=False)
-                    subt21 = subt21[20:h - 20, 20:w - 20]
-                    subt23 = subt23[20:h - 20, 20:w - 20]
-                    subt21 = np.where(subt21 <= 30, 0, subt21)
-                    subt23 = np.where(subt23 <= 30, 0, subt23)
-                    merged = (subt21 + subt23) / 2
-                    merged = merged.astype('uint8')
-                    merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
-                    _, subt21 = cv2.threshold(subt21, 30, 255, cv2.THRESH_BINARY)
-                    _, subt23 = cv2.threshold(subt23, 30, 255, cv2.THRESH_BINARY)
-                    thold1 = cv2.bitwise_and(subt21, subt23)
-                    thold1 = thold1.astype('uint8')
-                    thold2 = thold1
+                    # in case of motion compensation failure
+                    if len(dst23) < 12:
+                        print("Motion Compensation Failure!")
+                        subt21 = subtract_images(
+                            img2, img1, clip=0, isColor=False)
+                        subt23 = subtract_images(
+                            img2, img3, clip=0, isColor=False)
+                        subt21 = subt21[20:h - 20, 20:w - 20]
+                        subt23 = subt23[20:h - 20, 20:w - 20]
+                        subt21 = np.where(subt21 <= 30, 0, subt21)
+                        subt23 = np.where(subt23 <= 30, 0, subt23)
+                        merged = (subt21 + subt23) / 2
+                        merged = merged.astype('uint8')
+                        merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
+                        _, subt21 = cv2.threshold(
+                            subt21, 30, 255, cv2.THRESH_BINARY)
+                        _, subt23 = cv2.threshold(
+                            subt23, 30, 255, cv2.THRESH_BINARY)
+                        thold1 = cv2.bitwise_and(subt21, subt23)
+                        thold1 = thold1.astype('uint8')
+                        # thold2 = thold1
 
-            # search feature points
-            if self.frame_idx % self.detect_interval == 0:
-                # after initialization
-                if self.frame_idx != 0:
-                    p1 = p2 = p3 = p4 = p5 = p6 = None
-                    reg1 = reg2 = reg3 = reg4 = reg5 = reg6 = 0
+                # search feature points
+                if self.frame_idx % self.detect_interval == 0:
+                    # after initialization
+                    if self.frame_idx != 0:
+                        p1 = p2 = p3 = p4 = p5 = p6 = None
+                        reg1 = reg2 = reg3 = reg4 = reg5 = reg6 = 0
 
-                    for tr in self.tracks:
-                        (x, y) = tr[-1]
-                        if 0 < x < x1 and 0 < y < y1:
-                            reg1 += 1
-                        if x2 < x < w and 0 < y < y1:
-                            reg2 += 1
-                        if 0 < x < x1 and y4 < y < h:
-                            reg3 += 1
-                        if x2 < x < w and y4 < y < h:
-                            reg4 += 1
-                        if 0 < x < x1 and y2 < y < y3:
-                            reg5 += 1
-                        if x2 < x < w and y2 < y < y3:
-                            reg6 += 1
+                        for tr in self.tracks:
+                            (x, y) = tr[-1]
+                            if 0 < x < x1 and 0 < y < y1:
+                                reg1 += 1
+                            if x2 < x < w and 0 < y < y1:
+                                reg2 += 1
+                            if 0 < x < x1 and y4 < y < h:
+                                reg3 += 1
+                            if x2 < x < w and y4 < y < h:
+                                reg4 += 1
+                            if 0 < x < x1 and y2 < y < y3:
+                                reg5 += 1
+                            if x2 < x < w and y2 < y < y3:
+                                reg6 += 1
 
-                    if reg1 < 7:
-                        p1 = cv2.goodFeaturesToTrack(frame2, mask=mask1, **feature_params)
-                    if reg2 < 7:
-                        p2 = cv2.goodFeaturesToTrack(frame2, mask=mask2, **feature_params)
-                    if reg3 < 7:
-                        p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
-                    if reg4 < 7:
-                        p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    if reg5 < 7:
-                        p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    if reg6 < 7:
-                        p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                        if reg1 < 7:
+                            p1 = cv2.goodFeaturesToTrack(
+                                frame2, mask=mask1, **feature_params)
+                        if reg2 < 7:
+                            p2 = cv2.goodFeaturesToTrack(
+                                frame2, mask=mask2, **feature_params)
+                        if reg3 < 7:
+                            p3 = cv2.goodFeaturesToTrack(
+                                frame2, mask=mask3, **feature_params)
+                        if reg4 < 7:
+                            p4 = cv2.goodFeaturesToTrack(
+                                frame2, mask=mask4, **feature_params)
+                        if reg5 < 7:
+                            p5 = cv2.goodFeaturesToTrack(
+                                frame2, mask=mask5, **feature_params)
+                        if reg6 < 7:
+                            p6 = cv2.goodFeaturesToTrack(
+                                frame2, mask=mask6, **feature_params)
 
-                # initialization(only runs at first frame)
-                if self.frame_idx == 0:
-                    p1 = cv2.goodFeaturesToTrack(frame2, mask=mask1, **feature_params)
-                    p2 = cv2.goodFeaturesToTrack(frame2, mask=mask2, **feature_params)
-                    p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
-                    p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                    # initialization(only runs at first frame)
+                    if self.frame_idx == 0:
+                        p1 = cv2.goodFeaturesToTrack(
+                            frame2, mask=mask1, **feature_params)
+                        p2 = cv2.goodFeaturesToTrack(
+                            frame2, mask=mask2, **feature_params)
+                        p3 = cv2.goodFeaturesToTrack(
+                            frame2, mask=mask3, **feature_params)
+                        p4 = cv2.goodFeaturesToTrack(
+                            frame2, mask=mask4, **feature_params)
+                        p5 = cv2.goodFeaturesToTrack(
+                            frame2, mask=mask5, **feature_params)
+                        p6 = cv2.goodFeaturesToTrack(
+                            frame2, mask=mask6, **feature_params)
 
+                        for p in [p1, p2, p3, p4, p5, p6]:
+                            if p is not None:
+                                for x, y in p.reshape(-1, 2):
+                                    self.tracks.append([(x, y)])
+
+                        initial_tracks = opticalflow(
+                            frame2, frame3, self.tracks, lk_params)
+                        initial_src = np.float32(
+                            [[list(tr[-2])] for tr in initial_tracks])
+                        initial_dst = np.float32(
+                            [[list(tr[-1])] for tr in initial_tracks])
+                        HMat3to2, _ = cv2.findHomography(
+                            initial_src, initial_dst, 0, 5.0)
+
+                    # append found feature points
                     for p in [p1, p2, p3, p4, p5, p6]:
                         if p is not None:
                             for x, y in p.reshape(-1, 2):
                                 self.tracks.append([(x, y)])
 
-                    initial_tracks = opticalflow(frame2, frame3, self.tracks, lk_params)
-                    initial_src = np.float32([[list(tr[-2])] for tr in initial_tracks])
-                    initial_dst = np.float32([[list(tr[-1])] for tr in initial_tracks])
-                    HMat3to2, _ = cv2.findHomography(initial_src, initial_dst, 0, 5.0)
+                # iterate
+                self.frame_idx += 1
+                frame1 = frame2
+                frame2 = frame3
 
-                # append found feature points
-                for p in [p1, p2, p3, p4, p5, p6]:
-                    if p is not None:
-                        for x, y in p.reshape(-1, 2):
-                            self.tracks.append([(x, y)])
+                # draw image
+                if self.frame_idx > 2:
+                    # frame_draw = frame_draw[10:h-10, 10:w-10]
+                    # merged = merged[10:h - 10, 10:w - 10]
+                    # vis = imutils.resize(vis, height=h-40)
+                    vis = vis[20:h-20, 20:w-20]
+                    #merged = merged[20:h-20, 20:w-20]
+                    thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
+                    # thold2 = cv2.cvtColor(thold2, cv2.COLOR_GRAY2BGR)
 
-            # iterate
-            self.frame_idx += 1
-            frame1 = frame2
-            frame2 = frame3
+                    kpt = cv2.cvtColor(thold1, cv2.COLOR_BGR2GRAY)
+                    kpt_inv = cv2.bitwise_not(kpt)
+                    params = cv2.SimpleBlobDetector_Params()
+                    params.minThreshold = 0
+                    params.maxThreshold = 255
+                    params.filterByArea = True
+                    params.minArea = 15
+                    params.filterByInertia = False
+                    params.minInertiaRatio = 0.1
+                    params.filterByColor = False
+                    params.blobColor = 0
+                    params.filterByCircularity = False
+                    params.filterByConvexity = False
+                    params.minConvexity = 0.5
+                    detector = cv2.SimpleBlobDetector_create(params)
+                    kpts = detector.detect(kpt_inv)
 
-            # draw image
-            if self.frame_idx > 2:
-                # frame_draw = frame_draw[10:h-10, 10:w-10]
-                # merged = merged[10:h - 10, 10:w - 10]
-                # vis = imutils.resize(vis, height=h-40)
-                vis = vis[20:h-20, 20:w-20]
-                #merged = merged[20:h-20, 20:w-20]
-                thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
-                # thold2 = cv2.cvtColor(thold2, cv2.COLOR_GRAY2BGR)
+                    if len(kpts) > 0:
+                        ls = []
+                        for i in range(len(kpts)):
+                            ls.append(kpts[i].size)
+                            if kpts[i].size > 20:
+                                print(kpts[i].size)
+                                print("Avoid!!")
+                                cv2.putText(
+                                    vis, "Avoid!!", (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
+                                # cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
 
-                kpt = cv2.cvtColor(thold1, cv2.COLOR_BGR2GRAY)
-                kpt_inv = cv2.bitwise_not(kpt)
-                params = cv2.SimpleBlobDetector_Params()
-                params.minThreshold = 0
-                params.maxThreshold = 255
-                params.filterByArea = True
-                params.minArea = 15
-                params.filterByInertia = False
-                params.minInertiaRatio = 0.1
-                params.filterByColor = False
-                params.blobColor = 0
-                params.filterByCircularity = False
-                params.filterByConvexity = False
-                params.minConvexity = 0.5
-                detector = cv2.SimpleBlobDetector_create(params)
-                kpts = detector.detect(kpt_inv)
-                
-                if len(kpts) > 0:
-                    ls = []
-                    for i in range(len(kpts)):
-                        ls.append(kpts[i].size)
-                        if kpts[i].size > 20:
-                            print(kpts[i].size)
-                            print("Avoid!!")
-                            cv2.putText(vis, "Avoid!!", (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
-                            # cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                    vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
+                                            cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                    thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),
+                                               cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-                vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
-                                        cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-                thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),
-                                        cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                    final = np.hstack((vis, merged, thold1))
+                    cv2.imshow("frame", final)
 
+                    k = cv2.waitKey(1) & 0xFF
 
-                final = np.hstack((vis, merged, thold1))
-                cv2.imshow("frame", final)
-            
-            # waitkey
-            k = cv2.waitKey(1) & 0xFF
+                    # interrupt
+                    if k == 27:
+                        print("User interrupt!")
+                        self.vid.stop()
+                        break
 
-            # interrupt
-            if k == 27:
-                print("User interrupt!")
+            except KeyboardInterrupt:
                 self.vid.stop()
                 break
 
@@ -332,9 +369,9 @@ class App:
             totalFPS += FPS
             # print("FPS : ", "%.1f" % round(FPS, 3))
 
-
         # terminate
         print("Average FPS :", round(totalFPS/self.frame_idx, 1))
+
 
 a = App(video)
 a.run()

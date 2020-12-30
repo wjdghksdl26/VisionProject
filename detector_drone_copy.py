@@ -1,7 +1,6 @@
 # packages for image processing
 import cv2
 import numpy as np
-import argparse
 import time
 from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
@@ -14,20 +13,11 @@ from imgops.videostream import VideoStream
 
 # optical flow parameters
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
-feature_params = dict(maxCorners=7, qualityLevel=0.1,
+feature_params = dict(maxCorners=7, qualityLevel=0.03,
                       minDistance=7, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(9, 9), maxLevel=3,
-                 criteria=termination, minEigThreshold=1e-3)
+lk_params = dict(winSize=(15, 15), maxLevel=3,
+                 criteria=termination, minEigThreshold=1e-5)
 
-# parsing
-ap = argparse.ArgumentParser()
-ap.add_argument("-v", "--video", type=str)
-args = vars(ap.parse_args())
-
-if args["video"] == "cam":
-    video = 0
-else:
-    video = args["video"]
 
 '''
 # ROS node for processing video stream
@@ -43,31 +33,22 @@ def image_callback(data):
 
 
 class App:
-    def __init__(self, videoPath):
+    def __init__(self):
         self.track_len = 10
         self.detect_interval = 3
         self.mask_size = 70
         self.tracks = []
-        self.vid = VideoStream(src=video).start()
+        self.vid = VideoStream(src=0).start()
         self.frame_idx = 0
-        self.rotate = cv2.ROTATE_90_CLOCKWISE
 
     def run(self):
         # images for initialization
         frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         h, w = frame1.shape
-        r = 400.0 / w
-        dim = (400, int(h * r))
-        frame1 = cv2.resize(frame1, dim)
-        h, w = frame1.shape
-        print(frame1.shape)
-        # frame1 = cv2.rotate(frame1, self.rotate)
 
         frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        frame2 = cv2.resize(frame2, dim)
-        # frame2 = cv2.rotate(frame2, self.rotate)
 
         # mask for feature point search
         x1 = self.mask_size
@@ -76,16 +57,22 @@ class App:
         y2 = int(h/2 - self.mask_size/2)
         y3 = int(h/2 + self.mask_size/2)
         y4 = h - self.mask_size
+        # top left
         mask1 = np.zeros_like(frame1)
         mask1[0:y1, 0:x1] = 1
+        # top right
         mask2 = np.zeros_like(frame1)
         mask2[0:y1, x2:w] = 1
+        # bottom left
         mask3 = np.zeros_like(frame1)
         mask3[y4:h, 0:x1] = 1
+        # bottom right
         mask4 = np.zeros_like(frame1)
         mask4[y4:h, x2:w] = 1
+        # middle left
         mask5 = np.zeros_like(frame1)
         mask5[y2:y3, 0:x1] = 1
+        # middle right
         mask6 = np.zeros_like(frame1)
         mask6[y2:y3, x2:w] = 1
 
@@ -94,7 +81,6 @@ class App:
 
         # kernel for morphology operations
         kernel = np.ones((3, 3))
-        # kernel2 = np.ones((2, 2))
 
         # main loop
         while True:
@@ -107,11 +93,6 @@ class App:
                 # original frame
                 vis = frame3.copy()
                 frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
-                frame3 = cv2.resize(frame3, dim)
-                # frame3 = cv2.rotate(frame3, self.rotate)
-
-                vis = cv2.resize(vis, dim)
-                # vis = cv2.rotate(vis, self.rotate)
 
                 # begin motion estimation
                 if self.frame_idx > 0:
@@ -133,21 +114,24 @@ class App:
                         # Homography Mat. that warps img1 to fit img2
                         HMat1to2 = HMat3to2
                         # Homography Mat. that warps img3 to fit img2
-                        HMat3to2, stat = cv2.findHomography(src23, dst23, 0, 5.0)
+                        HMat3to2, stat = cv2.findHomography(
+                            src23, dst23, 0, 5.0)
 
                         # current frame
                         print("Frame", self.frame_idx)
 
                         # warping operation
                         HMat1to2 = np.linalg.inv(HMat1to2)
-                        warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h))
-                        warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h))
+                        warped1to2 = cv2.warpPerspective(
+                            img1, HMat1to2, (w, h))
+                        warped3to2 = cv2.warpPerspective(
+                            img3, HMat3to2, (w, h))
 
                         # Gaussian blur operation to ease impact of edges
                         # parameter tuning required
-                        warped1to2 = cv2.GaussianBlur(warped1to2, (9, 9), 0)
-                        warped3to2 = cv2.GaussianBlur(warped3to2, (9, 9), 0)
-                        img2 = cv2.GaussianBlur(img2, (9, 9), 0)
+                        warped1to2 = cv2.GaussianBlur(warped1to2, (3, 3), 0)
+                        warped3to2 = cv2.GaussianBlur(warped3to2, (3, 3), 0)
+                        img2 = cv2.GaussianBlur(img2, (3, 3), 0)
 
                         # subtracted images
                         subt21 = subtract_images(
@@ -158,17 +142,17 @@ class App:
                         # merge subtracted images
                         subt21 = subt21[20:h - 20, 20:w - 20]
                         subt23 = subt23[20:h - 20, 20:w - 20]
+                        '''
                         subt21 = cv2.dilate(
                             subt21, kernel, iterations=3).astype('int32')
                         subt23 = cv2.dilate(
                             subt23, kernel, iterations=3).astype('int32')
+                        '''
                         merged = (subt21 + subt23) / 2
                         subt21 = subt21.astype('uint8')
                         subt23 = subt23.astype('uint8')
-                        merged = np.where(merged <= 40, 0, merged)
+                        merged = np.where(merged <= 30, 0, merged)
                         merged = merged.astype('uint8')
-                        m = merged.copy()
-                        merged = cv2.equalizeHist(merged)
 
                         # ---------- essential operations finished ----------
 
@@ -195,21 +179,24 @@ class App:
                         '''
 
                         # draw flow
-                        merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
-                        cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
+                        for tr in self.tracks:
+                            cv2.circle(vis, tuple(np.int32(tr[-1])), 2, (0, 0, 255), -1)
+                        cv2.polylines(
+                            vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                     # in case of motion compensation failure
                     if len(dst23) < 12:
                         print("Motion Compensation Failure!")
-                        subt21 = subtract_images(img2, img1, clip=0, isColor=False)
-                        subt23 = subtract_images(img2, img3, clip=0, isColor=False)
+                        subt21 = subtract_images(
+                            img2, img1, clip=0, isColor=False)
+                        subt23 = subtract_images(
+                            img2, img3, clip=0, isColor=False)
                         subt21 = subt21[20:h - 20, 20:w - 20]
                         subt23 = subt23[20:h - 20, 20:w - 20]
                         subt21 = np.where(subt21 <= 30, 0, subt21)
                         subt23 = np.where(subt23 <= 30, 0, subt23)
                         merged = (subt21 + subt23) / 2
                         merged = merged.astype('uint8')
-                        merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
                         _, subt21 = cv2.threshold(
                             subt21, 30, 255, cv2.THRESH_BINARY)
                         _, subt23 = cv2.threshold(
@@ -301,11 +288,8 @@ class App:
 
                 # draw image
                 if self.frame_idx > 2:
-                    # frame_draw = frame_draw[10:h-10, 10:w-10]
-                    # merged = merged[10:h - 10, 10:w - 10]
-                    # vis = imutils.resize(vis, height=h-40)
                     vis = vis[20:h-20, 20:w-20]
-                    #merged = merged[20:h-20, 20:w-20]
+                    merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
                     thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
                     # thold2 = cv2.cvtColor(thold2, cv2.COLOR_GRAY2BGR)
 
@@ -340,7 +324,7 @@ class App:
                     vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
                                             cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                     thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),
-                                            cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                                               cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
                     final = np.hstack((vis, merged, thold1))
                     cv2.imshow("frame", final)
@@ -367,5 +351,5 @@ class App:
         print("Average FPS :", round(totalFPS/self.frame_idx, 1))
 
 
-a = App(video)
+a = App()
 a.run()

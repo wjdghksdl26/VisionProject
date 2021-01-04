@@ -7,7 +7,7 @@ from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
-feature_params = dict(maxCorners=7, qualityLevel=0.1, minDistance=7, blockSize=7, useHarrisDetector=False)
+feature_params = dict(maxCorners=15, qualityLevel=0.1, minDistance=3, blockSize=7, useHarrisDetector=False)
 lk_params = dict(winSize=(15, 15), maxLevel=3, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
@@ -24,9 +24,9 @@ np.set_printoptions(precision=3, suppress=True)
 
 class App:
     def __init__(self, videoPath):
-        self.track_len = 10
+        self.track_len = 5
         self.detect_interval = 3
-        self.mask_size = 100
+        self.mask_size = 50
         self.tracks = []
         self.vid = cv2.VideoCapture(videoPath)
         self.frame_idx = 0
@@ -72,6 +72,8 @@ class App:
 
         #kernel for morphology operations
         kernel = np.ones((3, 3))
+        kernel5 = np.ones((5, 5))
+        gaussiankernel = (3, 3)
 
         # main loop
         while True:
@@ -122,24 +124,34 @@ class App:
 
                     # Gaussian blur operation to ease impact of edges
                     # parameter tuning required
-                    warped1to2 = cv2.GaussianBlur(warped1to2, (3, 3), 0)
-                    warped3to2 = cv2.GaussianBlur(warped3to2, (3, 3), 0)
-                    img2 = cv2.GaussianBlur(img2, (3, 3), 0)
+                    warped1to2 = cv2.GaussianBlur(warped1to2, gaussiankernel, 0)
+                    warped3to2 = cv2.GaussianBlur(warped3to2, gaussiankernel, 0)
+                    img2 = cv2.GaussianBlur(img2, gaussiankernel, 0)
 
                     # subtracted images
-                    subt21 = subtract_images(warped1to2, img2, clip=10, isColor=False)
-                    subt23 = subtract_images(warped3to2, img2, clip=10, isColor=False)
+                    subt21 = subtract_images(warped1to2, img2, clip=15, isColor=False)
+                    subt23 = subtract_images(warped3to2, img2, clip=15, isColor=False)
+                    #subt21_2 = subtract_images(img2, warped1to2, clip=10, isColor=False)
+                    #subt23_2 = subtract_images(img2, warped3to2, clip=10, isColor=False)
 
                     # merge subtracted images
                     subt21 = subt21[15:h - 15, 15:w - 15]
                     subt23 = subt23[15:h - 15, 15:w - 15]
-                    #subt21 = cv2.dilate(subt21, kernel, iterations=2).astype('int32')
-                    #subt23 = cv2.dilate(subt23, kernel, iterations=2).astype('int32')
-                    #subt21 = cv2.morphologyEx(subt21, cv2.MORPH_OPEN, kernel)
-                    #subt23 = cv2.morphologyEx(subt23, cv2.MORPH_OPEN, kernel)
+                    #subt21_2 = subt21_2[15:h - 15, 15:w - 15]
+                    #subt23_2 = subt23_2[15:h - 15, 15:w - 15]
+                    subt21 = cv2.erode(subt21, kernel)
+                    subt23 = cv2.erode(subt23, kernel)
+                    #subt21_2 = cv2.erode(subt21_2, kernel)
+                    #subt23_2 = cv2.erode(subt23_2, kernel)
+                    subt21 = cv2.dilate(subt21, kernel, iterations=2).astype('int32')
+                    subt23 = cv2.dilate(subt23, kernel, iterations=2).astype('int32')
+                    #subt21_2 = cv2.dilate(subt21_2, kernel, iterations=2).astype('int32')
+                    #subt23_2 = cv2.dilate(subt23_2, kernel, iterations=2).astype('int32')
                     merged = (subt21 + subt23) / 2
-                    merged = np.where(merged <= 30, 0, merged)
+                    #merged = (subt21 + subt23 + subt21_2 + subt23_2) / 4
+                    merged = np.where(merged <= 40, 0, merged)
                     merged = merged.astype('uint8')
+                    merged = merged * 3
                     #merged = cv2.dilate(merged, kernel, iterations=1)
 
                     # ---------- essential operations finished ----------
@@ -147,7 +159,7 @@ class App:
                     # crude thresholding type 1
                     thold1 = merged.copy()
                     #thold1 = cv2.erode(thold1, kernel, iterations=2)
-                    _, thold1 = cv2.threshold(thold1, 30, 255, cv2.THRESH_BINARY)
+                    _, thold1 = cv2.threshold(thold1, 40, 255, cv2.THRESH_BINARY)
                     #thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
@@ -183,17 +195,17 @@ class App:
                         if x2 < x < w and y2 < y < y3:
                             reg6 += 1
 
-                    if reg1 < 7:
+                    if reg1 < 15:
                         p1 = cv2.goodFeaturesToTrack(frame2, mask=mask1, **feature_params)
-                    if reg2 < 7:
+                    if reg2 < 15:
                         p2 = cv2.goodFeaturesToTrack(frame2, mask=mask2, **feature_params)
-                    if reg3 < 7:
+                    if reg3 < 15:
                         p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
-                    if reg4 < 7:
+                    if reg4 < 15:
                         p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    if reg5 < 7:
+                    if reg5 < 15:
                         p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    if reg6 < 7:
+                    if reg6 < 15:
                         p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
 
                 # initialization(only runs at first frame)
@@ -231,7 +243,7 @@ class App:
                 #merged = merged[20:h - 20, 20:w - 20]
                 vis = vis[15:h-15, 15:w-15]
                 thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
-                '''
+                
                 kpt = cv2.cvtColor(thold1, cv2.COLOR_BGR2GRAY)
                 kpt_inv = cv2.bitwise_not(kpt)
                 params = cv2.SimpleBlobDetector_Params()
@@ -252,18 +264,18 @@ class App:
                 if len(kpts) > 0:
                     ls = []
                     for i in range(len(kpts)):
-                        ls.append(kpts[i].size)
+                        ls.append((kpts[i].pt, kpts[i].size))
                         if kpts[i].size > 20:
-                            print(kpts[i].size)
                             print("Avoid!!")
                             cv2.putText(vis, "Avoid!!", (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
                             # cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+                    print(ls)
 
                 vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                 thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-                '''
+                
 
                 final = np.hstack((vis, merged, thold1))
                 # final = np.hstack((s21, s23, m))
@@ -271,13 +283,7 @@ class App:
                 cv2.imshow("frame", final)
 
             # waitkey
-            k = cv2.waitKey(1) & 0xFF
-
-            # pixel-level inspection
-            if k == ord("s"):
-                initbb = cv2.selectROI("frame", final, fromCenter=False, showCrosshair=False)
-                (bbx, bby, bbw, bbh) = initbb
-                print(final[bby:bby+bbh, bbx:bbx+bbw])
+            k = cv2.waitKey(0) & 0xFF
 
             # interrupt
             if k == 27:

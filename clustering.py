@@ -289,7 +289,7 @@ class App:
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
 
-                final = np.hstack((vis, merged, thold1, thold2))
+                final = np.hstack((vis, merged, thold1))
                 # final = np.hstack((s21, s23, m))
                 # final = cv2.rotate(final, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 cv2.imshow("frame", final)

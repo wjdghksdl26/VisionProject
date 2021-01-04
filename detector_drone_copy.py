@@ -135,9 +135,9 @@ class App:
 
                         # subtracted images
                         subt21 = subtract_images(
-                            img2, warped1to2, clip=10, isColor=False)
+                            img2, warped1to2, clip=20, isColor=False)
                         subt23 = subtract_images(
-                            img2, warped3to2, clip=10, isColor=False)
+                            img2, warped3to2, clip=20, isColor=False)
 
                         # merge subtracted images
                         subt21 = subt21[20:h - 20, 20:w - 20]
@@ -151,7 +151,7 @@ class App:
                         merged = (subt21 + subt23) / 2
                         subt21 = subt21.astype('uint8')
                         subt23 = subt23.astype('uint8')
-                        merged = np.where(merged <= 30, 0, merged)
+                        merged = np.where(merged <= 50, 0, merged)
                         merged = merged.astype('uint8')
 
                         # ---------- essential operations finished ----------
@@ -187,6 +187,7 @@ class App:
                     # in case of motion compensation failure
                     if len(dst23) < 12:
                         print("Motion Compensation Failure!")
+                        '''
                         subt21 = subtract_images(
                             img2, img1, clip=0, isColor=False)
                         subt23 = subtract_images(
@@ -202,6 +203,8 @@ class App:
                         _, subt23 = cv2.threshold(
                             subt23, 30, 255, cv2.THRESH_BINARY)
                         thold1 = cv2.bitwise_and(subt21, subt23)
+                        '''
+                        thold1 = np.zeros_like(img1)
                         thold1 = thold1.astype('uint8')
                         # thold2 = thold1
 

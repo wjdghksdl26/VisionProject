@@ -48,23 +48,23 @@ class App:
         self.detect_interval = 3
         self.mask_size = 70
         self.tracks = []
-        self.vid = VideoStream(src=video).start()
+        self.vid = cv2.VideoCapture(videoPath)
         self.frame_idx = 0
         self.rotate = cv2.ROTATE_90_CLOCKWISE
 
     def run(self):
         # images for initialization
-        frame1 = self.vid.read()
+        ret, frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         h, w = frame1.shape
-        r = 400.0 / w
-        dim = (400, int(h * r))
+        r = 300.0 / w
+        dim = (300, int(h * r))
         frame1 = cv2.resize(frame1, dim)
         h, w = frame1.shape
         print(frame1.shape)
         # frame1 = cv2.rotate(frame1, self.rotate)
 
-        frame2 = self.vid.read()
+        ret, frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
         frame2 = cv2.resize(frame2, dim)
         # frame2 = cv2.rotate(frame2, self.rotate)
@@ -102,7 +102,7 @@ class App:
                 t_start = time.time()
 
                 # read and process frame
-                frame3 = self.vid.read()
+                ret, frame3 = self.vid.read()
 
                 # original frame
                 vis = frame3.copy()
@@ -129,7 +129,7 @@ class App:
                     # points in img2
                     dst23 = np.float32([[list(tr[-2])] for tr in self.tracks])
 
-                    if len(dst23) >= 12:
+                    if len(dst23) >= 16:
                         # Homography Mat. that warps img1 to fit img2
                         HMat1to2 = HMat3to2
                         # Homography Mat. that warps img3 to fit img2
@@ -153,25 +153,20 @@ class App:
                         img2 = cv2.GaussianBlur(img2, (9, 9), 0)
 
                         # subtracted images
-                        subt21 = subtract_images(
-                            img2, warped1to2, clip=10, isColor=False)
-                        subt23 = subtract_images(
-                            img2, warped3to2, clip=10, isColor=False)
+                        subt21 = subtract_images(img2, warped1to2, clip=10, isColor=False)
+                        subt23 = subtract_images(img2, warped3to2, clip=10, isColor=False)
 
                         # merge subtracted images
                         subt21 = subt21[20:h - 20, 20:w - 20]
                         subt23 = subt23[20:h - 20, 20:w - 20]
-                        subt21 = cv2.dilate(
-                            subt21, kernel, iterations=3).astype('int32')
-                        subt23 = cv2.dilate(
-                            subt23, kernel, iterations=3).astype('int32')
+                        subt21 = cv2.dilate(subt21, kernel, iterations=3).astype('int32')
+                        subt23 = cv2.dilate(subt23, kernel, iterations=3).astype('int32')
                         merged = (subt21 + subt23) / 2
                         subt21 = subt21.astype('uint8')
                         subt23 = subt23.astype('uint8')
                         merged = np.where(merged <= 40, 0, merged)
                         merged = merged.astype('uint8')
                         m = merged.copy()
-                        merged = cv2.equalizeHist(merged)
 
                         # ---------- essential operations finished ----------
 
@@ -179,8 +174,8 @@ class App:
                         thold1 = merged.copy()
                         thold1 = cv2.erode(thold1, kernel, iterations=1)
                         _, thold1 = cv2.threshold(
-                            thold1, 30, 255, cv2.THRESH_BINARY)
-                        thold1 = cv2.dilate(thold1, kernel, iterations=5)
+                            thold1, 20, 255, cv2.THRESH_BINARY)
+                        thold1 = cv2.dilate(thold1, kernel, iterations=1)
 
                         '''
                         # crude thresholding type 2
@@ -203,8 +198,9 @@ class App:
                             merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                     # in case of motion compensation failure
-                    if len(dst23) < 12:
+                    if len(dst23) < 16:
                         print("Motion Compensation Failure!")
+                        '''
                         subt21 = subtract_images(
                             img2, img1, clip=0, isColor=False)
                         subt23 = subtract_images(
@@ -221,6 +217,9 @@ class App:
                         _, subt23 = cv2.threshold(
                             subt23, 30, 255, cv2.THRESH_BINARY)
                         thold1 = cv2.bitwise_and(subt21, subt23)
+                        '''
+                        thold1 = np.zeros_like(img1)
+                        thold1 = thold1[20:h-20, 20:w-20]
                         thold1 = thold1.astype('uint8')
                         # thold2 = thold1
 
@@ -356,11 +355,9 @@ class App:
                     # interrupt
                     if k == 27:
                         print("User interrupt!")
-                        self.vid.stop()
                         break
 
             except KeyboardInterrupt:
-                self.vid.stop()
                 break
 
             # calculate FPS

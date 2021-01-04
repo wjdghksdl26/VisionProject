@@ -4,8 +4,8 @@ import cv2
 class VideoStream:
     def __init__(self, src = 1):
         self.stream = cv2.VideoCapture(src)
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
         (self.grabbed, self.frame) = self.stream.read()
 
         self.stopped = False

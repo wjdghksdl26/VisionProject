@@ -124,9 +124,9 @@ class App:
 
                     # Gaussian blur operation to ease impact of edges
                     # parameter tuning required
-                    warped1to2 = cv2.GaussianBlur(warped1to2, gaussiankernel, 0)
-                    warped3to2 = cv2.GaussianBlur(warped3to2, gaussiankernel, 0)
-                    img2 = cv2.GaussianBlur(img2, gaussiankernel, 0)
+                    #warped1to2 = cv2.GaussianBlur(warped1to2, gaussiankernel, 0)
+                    #warped3to2 = cv2.GaussianBlur(warped3to2, gaussiankernel, 0)
+                    #img2 = cv2.GaussianBlur(img2, gaussiankernel, 0)
 
                     # subtracted images
                     subt21 = subtract_images(warped1to2, img2, clip=15, isColor=False)
@@ -139,19 +139,21 @@ class App:
                     subt23 = subt23[15:h - 15, 15:w - 15]
                     #subt21_2 = subt21_2[15:h - 15, 15:w - 15]
                     #subt23_2 = subt23_2[15:h - 15, 15:w - 15]
+                    subt21 = cv2.medianBlur(subt21, 5)
+                    subt23 = cv2.medianBlur(subt23, 5)
                     subt21 = cv2.erode(subt21, kernel)
                     subt23 = cv2.erode(subt23, kernel)
                     #subt21_2 = cv2.erode(subt21_2, kernel)
                     #subt23_2 = cv2.erode(subt23_2, kernel)
-                    subt21 = cv2.dilate(subt21, kernel, iterations=2).astype('int32')
-                    subt23 = cv2.dilate(subt23, kernel, iterations=2).astype('int32')
+                    subt21 = cv2.dilate(subt21, kernel, iterations=3).astype('int32')
+                    subt23 = cv2.dilate(subt23, kernel, iterations=3).astype('int32')
                     #subt21_2 = cv2.dilate(subt21_2, kernel, iterations=2).astype('int32')
                     #subt23_2 = cv2.dilate(subt23_2, kernel, iterations=2).astype('int32')
                     merged = (subt21 + subt23) / 2
                     #merged = (subt21 + subt23 + subt21_2 + subt23_2) / 4
-                    merged = np.where(merged <= 40, 0, merged)
+                    merged = np.where(merged <= 50, 0, merged)
                     merged = merged.astype('uint8')
-                    merged = merged * 3
+                    merged = merged * 2
                     #merged = cv2.dilate(merged, kernel, iterations=1)
 
                     # ---------- essential operations finished ----------
@@ -159,7 +161,7 @@ class App:
                     # crude thresholding type 1
                     thold1 = merged.copy()
                     #thold1 = cv2.erode(thold1, kernel, iterations=2)
-                    _, thold1 = cv2.threshold(thold1, 40, 255, cv2.THRESH_BINARY)
+                    _, thold1 = cv2.threshold(thold1, 60, 255, cv2.THRESH_BINARY)
                     #thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
@@ -250,7 +252,7 @@ class App:
                 params.minThreshold = 0
                 params.maxThreshold = 255
                 params.filterByArea = True
-                params.minArea = 15
+                params.minArea = 5
                 params.filterByInertia = False
                 params.minInertiaRatio = 0.1
                 params.filterByColor = False

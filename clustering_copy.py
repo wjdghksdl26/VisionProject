@@ -5,6 +5,7 @@ import argparse
 import time
 from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
+from imgops.videostream import VideoStream
 from logicops.cluster import clusterwithsize
 from logicops.tracker import Tracker
 
@@ -17,9 +18,9 @@ ap.add_argument("-v", "--video", type=str)
 args = vars(ap.parse_args())
 
 if args["video"] == "cam":
-    video = 0
+    video = VideoStream(src=0).start()
 else:
-    video = args["video"]
+    video = cv2.VideoCapture(args["video"])
 
 np.set_printoptions(precision=3, suppress=True)
 
@@ -27,10 +28,10 @@ np.set_printoptions(precision=3, suppress=True)
 class App:
     def __init__(self, videoPath):
         self.track_len = 5
-        self.detect_interval = 3
+        self.detect_interval = 1
         self.mask_size = 50
         self.tracks = []
-        self.vid = cv2.VideoCapture(videoPath)
+        self.vid = videoPath
         self.frame_idx = 0
         self.rotate = cv2.ROTATE_90_CLOCKWISE
 
@@ -56,16 +57,22 @@ class App:
         y2 = int(h/2 - self.mask_size/2)
         y3 = int(h/2 + self.mask_size/2)
         y4 = h - self.mask_size
+        # top left
         mask1 = np.zeros_like(frame1)
         mask1[0:y1, 0:x1] = 1
+        # top right
         mask2 = np.zeros_like(frame1)
         mask2[0:y1, x2:w] = 1
+        # bottom left
         mask3 = np.zeros_like(frame1)
         mask3[y4:h, 0:x1] = 1
+        # bottom right
         mask4 = np.zeros_like(frame1)
         mask4[y4:h, x2:w] = 1
+        # middle left
         mask5 = np.zeros_like(frame1)
         mask5[y2:y3, 0:x1] = 1
+        # middle right
         mask6 = np.zeros_like(frame1)
         mask6[y2:y3, x2:w] = 1
 
@@ -200,10 +207,10 @@ class App:
                         p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
                     if reg4 < 15:
                         p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    if reg5 < 15:
-                        p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    if reg6 < 15:
-                        p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                    #if reg5 < 15:
+                    #    p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
+                    #if reg6 < 15:
+                    #    p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
 
                 # initialization(only runs at first frame)
                 if self.frame_idx == 0:
@@ -211,8 +218,10 @@ class App:
                     p2 = cv2.goodFeaturesToTrack(frame2, mask=mask2, **feature_params)
                     p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
                     p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                    #p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
+                    #p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                    p5 = None
+                    p6 = None
 
                     for p in [p1, p2, p3, p4, p5, p6]:
                         if p is not None:

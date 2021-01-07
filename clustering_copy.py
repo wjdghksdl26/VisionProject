@@ -5,6 +5,8 @@ import argparse
 import time
 from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
+from logicops.cluster import clusterwithsize
+from logicops.tracker import Tracker
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=15, qualityLevel=0.1, minDistance=3, blockSize=7, useHarrisDetector=False)
@@ -75,6 +77,8 @@ class App:
         kernel5 = np.ones((5, 5))
         gaussiankernel = (3, 3)
 
+        tracker = Tracker()
+
         # main loop
         while True:
             t_start = time.time()
@@ -131,26 +135,17 @@ class App:
                     # subtracted images
                     subt21 = subtract_images(warped1to2, img2, clip=15, isColor=False)
                     subt23 = subtract_images(warped3to2, img2, clip=15, isColor=False)
-                    #subt21_2 = subtract_images(img2, warped1to2, clip=10, isColor=False)
-                    #subt23_2 = subtract_images(img2, warped3to2, clip=10, isColor=False)
 
                     # merge subtracted images
                     subt21 = subt21[15:h - 15, 15:w - 15]
                     subt23 = subt23[15:h - 15, 15:w - 15]
-                    #subt21_2 = subt21_2[15:h - 15, 15:w - 15]
-                    #subt23_2 = subt23_2[15:h - 15, 15:w - 15]
-                    subt21 = cv2.medianBlur(subt21, 5)
-                    subt23 = cv2.medianBlur(subt23, 5)
+                    subt21 = cv2.medianBlur(subt21, 3)
+                    subt23 = cv2.medianBlur(subt23, 3)
                     subt21 = cv2.erode(subt21, kernel)
                     subt23 = cv2.erode(subt23, kernel)
-                    #subt21_2 = cv2.erode(subt21_2, kernel)
-                    #subt23_2 = cv2.erode(subt23_2, kernel)
-                    subt21 = cv2.dilate(subt21, kernel, iterations=3).astype('int32')
-                    subt23 = cv2.dilate(subt23, kernel, iterations=3).astype('int32')
-                    #subt21_2 = cv2.dilate(subt21_2, kernel, iterations=2).astype('int32')
-                    #subt23_2 = cv2.dilate(subt23_2, kernel, iterations=2).astype('int32')
+                    subt21 = cv2.dilate(subt21, kernel, iterations=4).astype('int32')
+                    subt23 = cv2.dilate(subt23, kernel, iterations=4).astype('int32')
                     merged = (subt21 + subt23) / 2
-                    #merged = (subt21 + subt23 + subt21_2 + subt23_2) / 4
                     merged = np.where(merged <= 50, 0, merged)
                     merged = merged.astype('uint8')
                     merged = merged * 2
@@ -162,7 +157,7 @@ class App:
                     thold1 = merged.copy()
                     #thold1 = cv2.erode(thold1, kernel, iterations=2)
                     _, thold1 = cv2.threshold(thold1, 60, 255, cv2.THRESH_BINARY)
-                    #thold1 = cv2.dilate(thold1, kernel, iterations=2)
+                    thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
                     merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
@@ -244,6 +239,37 @@ class App:
             if self.frame_idx > 2:
                 #merged = merged[20:h - 20, 20:w - 20]
                 vis = vis[15:h-15, 15:w-15]
+                nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(thold1, None, None, None, 8, cv2.CV_32S)
+                thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
+
+                centers = []
+                if 1 < len(centroids) < 7:
+                    ls = []
+                    for c, s in zip(centroids, stats):
+                        if 10 < s[4] < 5000:
+                            c = tuple(c.astype(int))
+                            sz = int(s[4])
+                            ls.append((c, sz))
+                            cv2.circle(thold1, c, 1, (0, 0, 255), 2)
+
+                    centers, sizels = clusterwithsize(ls, thresh=100)
+                    print(len(centroids))
+                    #print(centers)
+                    
+                    #if len(centers) < 10:
+                        #for idx, i in enumerate(centers):
+                            #cv2.circle(vis, tuple(i), int(np.sqrt(sizels[idx])), (0, 0, 255), 2)
+                            
+
+                objs = tracker.update(centers)
+                for (ID, cent) in objs.items():
+                    text = "ID {}".format(ID)
+                    cv2.putText(vis, text, (cent[0] - 10, cent[1] - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    cv2.circle(vis, (cent[0], cent[1]), 4, (0, 255, 0), -1)
+
+
+                '''
                 thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
                 
                 kpt = cv2.cvtColor(thold1, cv2.COLOR_BGR2GRAY)
@@ -252,7 +278,7 @@ class App:
                 params.minThreshold = 0
                 params.maxThreshold = 255
                 params.filterByArea = True
-                params.minArea = 5
+                params.minArea = 15
                 params.filterByInertia = False
                 params.minInertiaRatio = 0.1
                 params.filterByColor = False
@@ -263,6 +289,7 @@ class App:
                 detector = cv2.SimpleBlobDetector_create(params)
                 kpts = detector.detect(kpt_inv)
                 
+                
                 if len(kpts) > 0:
                     ls = []
                     for i in range(len(kpts)):
@@ -272,20 +299,29 @@ class App:
                             cv2.putText(vis, "Avoid!!", (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
                             # cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
                     print(ls)
+                
+
+                if len(kpts) > 0:
+                    ls = []
+                    for i in kpts:
+                        ls.append(i.pt)
+                
+                    centers = cluster(ls, thresh=30)
+                    print(centers)
+                
 
                 vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                 thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),
                                         cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                '''
                 
 
                 final = np.hstack((vis, merged, thold1))
-                # final = np.hstack((s21, s23, m))
-                # final = cv2.rotate(final, cv2.ROTATE_90_COUNTERCLOCKWISE)
                 cv2.imshow("frame", final)
 
             # waitkey
-            k = cv2.waitKey(0) & 0xFF
+            k = cv2.waitKey(1) & 0xFF
 
             # interrupt
             if k == 27:

@@ -4,23 +4,32 @@ from collections import deque
 import numpy as np
 
 class Tracker():
-    def __init__(self, thresh=35, maxDisappeared=3, track_length=10):
+    def __init__(self, thresh=35, maxDisappeared=3, track_length=10, track_start_length=5):
         self.nextID = 0
+        self.tempID = 100
         self.objects = OrderedDict()
+        self.objects_TF = OrderedDict()
         self.disappeared = OrderedDict()
         self.thresh = thresh
         self.maxDisappeared = maxDisappeared
         self.track_length = track_length
+        self.track_start_length = track_start_length
 
     def register(self, pt):
-        self.objects[self.nextID] = deque([pt])
-        self.disappeared[self.nextID] = 0
-        self.nextID += 1
+        self.objects[self.tempID] = deque([pt])
+        self.objects_TF[self.tempID] = False
+        self.disappeared[self.tempID] = 0
+        self.tempID += 1
 
     def deregister(self, objID):
         del self.objects[objID]
         del self.disappeared[objID]
-        self.nextID -= 1
+        if self.objects_TF[objID] == False:
+            del self.objects_TF[objID]
+            self.tempID -= 1
+        else:
+            del self.objects_TF[objID]
+            self.nextID -= 1
 
     def update(self, pts):
         # pts = list of tuples
@@ -80,5 +89,13 @@ class Tracker():
             else:
                 for col in unusedcols:
                     self.register(pts[col])
+
+            for key in list(self.objects.keys()):
+                if len(self.objects[key]) == self.track_start_length:
+                    self.objects_TF[self.nextID] = True
+                    del self.objects_TF[key]
+                    self.objects[self.nextID] = self.objects.pop(key)
+                    self.disappeared[self.nextID] = self.disappeared.pop(key)
+                    self.nextID += 1
 
         return self.objects

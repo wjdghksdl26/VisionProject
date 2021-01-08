@@ -7,7 +7,7 @@ from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
 from imgops.videostream import VideoStream
 from logicops.cluster import clusterwithsize
-from logicops.tracker import Tracker
+from logicops.tracker_copy import Tracker
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=15, qualityLevel=0.1, minDistance=3, blockSize=7, useHarrisDetector=False)
@@ -148,10 +148,10 @@ class App:
                     subt23 = subt23[15:h - 15, 15:w - 15]
                     subt21 = cv2.medianBlur(subt21, 3)
                     subt23 = cv2.medianBlur(subt23, 3)
-                    subt21 = cv2.erode(subt21, kernel)
-                    subt23 = cv2.erode(subt23, kernel)
-                    subt21 = cv2.dilate(subt21, kernel, iterations=4).astype('int32')
-                    subt23 = cv2.dilate(subt23, kernel, iterations=4).astype('int32')
+                    #subt21 = cv2.erode(subt21, kernel)
+                    #subt23 = cv2.erode(subt23, kernel)
+                    #subt21 = cv2.dilate(subt21, kernel, iterations=1).astype('int32')
+                    #subt23 = cv2.dilate(subt23, kernel, iterations=1).astype('int32')
                     merged = (subt21 + subt23) / 2
                     merged = np.where(merged <= 50, 0, merged)
                     merged = merged.astype('uint8')
@@ -257,12 +257,12 @@ class App:
                     for c, s in zip(centroids, stats):
                         if 10 < s[4] < 5000:
                             c = tuple(c.astype(int))
-                            sz = int(s[4])
-                            ls.append((c, sz))
+                            sizewidth = int(s[2])
+                            sizeheight = int(s[3])
+                            ls.append((c, sizewidth, sizeheight))
                             cv2.circle(thold1, c, 1, (0, 0, 255), 2)
 
                     centers, sizels = clusterwithsize(ls, thresh=100)
-                    print(len(centroids))
                     #print(centers)
                     
                     #if len(centers) < 10:
@@ -271,14 +271,24 @@ class App:
                             
 
                 objs = tracker.update(centers)
+                print(tracker.objects_TF)
+                print(objs)
+                print(tracker.nextID)
+                '''
                 for (ID, cent) in objs.items():
-                    if len(cent) > 3:
+                    if tracker.objects_TF[ID] == True:
                         text = "ID {}".format(ID)
                         cv2.putText(vis, text, (cent[-1][0] - 10, cent[-1][1] - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1)
-                
-                print(objs)
+                '''
+                for ID in tracker.objects_TF:
+                    if tracker.objects_TF[ID] == True:
+                        text = "ID {}".format(ID)
+                        cent = objs[ID]
+                        cv2.putText(vis, text, (cent[-1][0] - 10, cent[-1][1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1) 
 
 
                 '''

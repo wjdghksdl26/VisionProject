@@ -64,7 +64,8 @@ def clusterwithsize(pts, thresh=3):
     for i in cluster:
         rx = 0.0
         ry = 0.0
-        rs = 0.0
+        rw = 0.0
+        rh = 0.0
         group = list(cluster[i])
 
         #weighed average
@@ -72,15 +73,16 @@ def clusterwithsize(pts, thresh=3):
             #rx = rx + j[0][0]
             #ry = ry + j[0][1]
             rx = rx + j[0][0] * j[1]
-            ry = ry + j[0][1] * j[1]
-            rs = rs + j[1]
+            ry = ry + j[0][1] * j[2]
+            rw = rw + j[1]
+            rh = rh + j[2]
 
         #x = rx / len(group)
         #y = ry / len(group)
-        x = rx / rs
-        y = ry / rs
+        x = rx / rw
+        y = ry / rh
         centerls.append((int(x), int(y)))
-        sizels.append(int(rs))
+        sizels.append((int(rw), int(rh)))
 
     # ls = [np.mean(np.array(list(cluster[i])), axis=0) for i in cluster]
 

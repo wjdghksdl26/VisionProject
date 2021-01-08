@@ -1,5 +1,6 @@
 from scipy.spatial import distance as dist
 from collections import OrderedDict
+from collections import deque
 import numpy as np
 
 class Tracker():
@@ -11,7 +12,7 @@ class Tracker():
         self.maxDisappeared = maxDisappeared
 
     def register(self, pt):
-        self.objects[self.nextID] = pt
+        self.objects[self.nextID] = [pt]
         self.disappeared[self.nextID] = 0
         self.nextID += 1
 
@@ -37,8 +38,9 @@ class Tracker():
         else:
             IDs = list(self.objects.keys())
             cents = list(self.objects.values())
+            calc = [c[-1] for c in cents]
 
-            D = dist.cdist(cents, pts)
+            D = dist.cdist(calc, pts)
 
             rows = D.min(axis=1).argsort()
             cols = D.argmin(axis=1)[rows]
@@ -52,7 +54,8 @@ class Tracker():
 
                 if D[row][col] < self.thresh:
                     objectID = IDs[row]
-                    self.objects[objectID] = pts[col]
+                    #self.objects[objectID] = pts[col]
+                    self.objects[objectID].append(pts[col])
                     self.disappeared[objectID] = 0
                     usedrows.add(row)
                     usedcols.add(col)

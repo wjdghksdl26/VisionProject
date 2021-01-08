@@ -124,7 +124,7 @@ class App:
                     # Homography Mat. that warps img1 to fit img2
                     HMat1to2 = HMat3to2
                     # Homography Mat. that warps img3 to fit img2
-                    HMat3to2, stat = cv2.findHomography(src23, dst23, 0, 5.0)
+                    HMat3to2, stat = cv2.findHomography(src23, dst23, cv2.RANSAC, 1.0)
 
                     # current frame
                     print("Frame", self.frame_idx)
@@ -272,10 +272,13 @@ class App:
 
                 objs = tracker.update(centers)
                 for (ID, cent) in objs.items():
-                    text = "ID {}".format(ID)
-                    cv2.putText(vis, text, (cent[0] - 10, cent[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                    cv2.circle(vis, (cent[0], cent[1]), 4, (0, 255, 0), -1)
+                    if len(cent) > 3:
+                        text = "ID {}".format(ID)
+                        cv2.putText(vis, text, (cent[-1][0] - 10, cent[-1][1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1)
+                
+                print(objs)
 
 
                 '''

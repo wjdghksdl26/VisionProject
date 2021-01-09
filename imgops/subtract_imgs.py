@@ -1,7 +1,7 @@
 import cv2
 
 
-def subtract_images(image1, image2, clip=0, absolute=False, isColor=False):
+def SubtractImages(image1, image2, clip=0, absolute=False, isColor=False):
     image1 = image1.astype('int32')
     image2 = image2.astype('int32')
 

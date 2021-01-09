@@ -1,6 +1,7 @@
 from threading import Thread
 import cv2
 
+
 class VideoStream:
     def __init__(self, src = 1):
         self.stream = cv2.VideoCapture(src)

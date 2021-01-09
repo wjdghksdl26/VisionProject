@@ -29,29 +29,26 @@ np.set_printoptions(precision=3, suppress=True)
 class App:
     def __init__(self, videoPath):
         self.track_len = 5
-        self.detect_interval = 2
+        self.detect_interval = 1
         self.mask_size = 50
         self.tracks = deque()
         self.vid = videoPath
         self.frame_idx = 0
-        self.rotate = cv2.ROTATE_90_CLOCKWISE
 
     def run(self):
         # images for initialization
         ret, frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         frame1 = imutils.resize(frame1, width=300)
-        #frame1 = cv2.rotate(frame1, self.rotate)
 
         ret, frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
         frame2 = imutils.resize(frame2, width=300)
-        #frame2 = cv2.rotate(frame2, self.rotate)
 
         # video size
         h, w = frame1.shape
 
-        # mask for feature point search
+        # masks for feature point search
         x1 = self.mask_size
         x2 = w - self.mask_size
         y1 = self.mask_size
@@ -80,11 +77,12 @@ class App:
         # performance index variables
         totalFPS = 0
 
-        #kernel for morphology operations
+        # kernel for morphology operations
         kernel = np.ones((3, 3))
         kernel5 = np.ones((5, 5))
         gaussiankernel = (3, 3)
 
+        # object tracker initialization
         tracker = Tracker()
 
         # main loop
@@ -97,14 +95,14 @@ class App:
                 print("End of video stream!")
                 break
 
-            # original frame
+            # current frame
             vis = frame3.copy()
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
             frame3 = imutils.resize(frame3, width=300)
-            #frame3 = cv2.rotate(frame3, self.rotate)
 
+            # copy of current frame (for visualization)
             vis = imutils.resize(vis, width=300)
-            #vis = cv2.rotate(vis, self.rotate)
+            vis = vis[15:h-15, 15:w-15]
 
             # begin motion estimation
             if self.frame_idx > 0:
@@ -131,14 +129,16 @@ class App:
                     print("Frame", self.frame_idx)
 
                     # warping operation
+                    #HMat1to2 = np.linalg.inv(HMat1to2)
+                    # warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR)
+                    # OpenCV 3.x does not have cv2.WARP_INVERSE_MAP
                     warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
                     warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h), cv2.INTER_LINEAR)
 
                     # Gaussian blur operation to ease impact of edges
-                    # parameter tuning required
-                    #warped1to2 = cv2.GaussianBlur(warped1to2, gaussiankernel, 0)
-                    #warped3to2 = cv2.GaussianBlur(warped3to2, gaussiankernel, 0)
-                    #img2 = cv2.GaussianBlur(img2, gaussiankernel, 0)
+                    # warped1to2 = cv2.GaussianBlur(warped1to2, gaussiankernel, 0)
+                    # warped3to2 = cv2.GaussianBlur(warped3to2, gaussiankernel, 0)
+                    # img2 = cv2.GaussianBlur(img2, gaussiankernel, 0)
 
                     # subtracted images
                     subt21 = SubtractImages(warped1to2, img2, clip=15)
@@ -149,27 +149,27 @@ class App:
                     subt23 = subt23[15:h - 15, 15:w - 15]
                     subt21 = cv2.medianBlur(subt21, 3)
                     subt23 = cv2.medianBlur(subt23, 3)
-                    #subt21 = cv2.erode(subt21, kernel)
-                    #subt23 = cv2.erode(subt23, kernel)
-                    #subt21 = cv2.dilate(subt21, kernel, iterations=1).astype('int32')
-                    #subt23 = cv2.dilate(subt23, kernel, iterations=1).astype('int32')
+                    # subt21 = cv2.erode(subt21, kernel)
+                    # subt23 = cv2.erode(subt23, kernel)
+                    # subt21 = cv2.dilate(subt21, kernel, iterations=1).astype('int32')
+                    # subt23 = cv2.dilate(subt23, kernel, iterations=1).astype('int32')
                     merged = (subt21 + subt23) / 2
-                    merged = np.where(merged <= 50, 0, merged)
-                    merged = merged.astype('uint8')
+                    merged = np.where(merged <= 50, 0, merged).astype('uint8')
                     merged = merged * 2
-                    #merged = cv2.dilate(merged, kernel, iterations=1)
+                    # merged = cv2.dilate(merged, kernel, iterations=1)
 
                     # ---------- essential operations finished ----------
 
                     # crude thresholding type 1
                     thold1 = merged.copy()
-                    #thold1 = cv2.erode(thold1, kernel, iterations=2)
+                    # thold1 = cv2.erode(thold1, kernel, iterations=1)
                     _, thold1 = cv2.threshold(thold1, 60, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
-                    merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
-                    cv2.polylines(merged, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
+                    for tr in self.tracks:
+                            cv2.circle(vis, tuple(np.int32(tr[-1])), 2, (0, 0, 255), -1)
+                    cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                 # in case of motion compensation failure
                 if len(dst23) < 12:
@@ -177,6 +177,7 @@ class App:
                     thold1 = np.zeros_like(img1)
                     thold1 = thold1[15:h-15, 15:w-15]
                     thold1 = thold1.astype('uint8')
+                    merged = thold1
 
             # search feature points
             if self.frame_idx % self.detect_interval == 0:
@@ -245,15 +246,15 @@ class App:
             frame1 = frame2
             frame2 = frame3
 
-            # draw image
+            # cluster & track
             if self.frame_idx > 2:
-                #merged = merged[20:h - 20, 20:w - 20]
-                vis = vis[15:h-15, 15:w-15]
+                # find connected components
                 nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(thold1, None, None, None, 8, cv2.CV_32S)
                 thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
 
+                # pick components with threshold
                 centers = []
-                if 1 < len(centroids) < 10:
+                if 1 < len(centroids) < 50:
                     ls = []
                     for c, s in zip(centroids, stats):
                         if 10 < s[4] < 5000:
@@ -261,19 +262,18 @@ class App:
                             sizewidth = int(s[2])
                             sizeheight = int(s[3])
                             ls.append((c, sizewidth, sizeheight))
+                            # mark found components
                             cv2.circle(thold1, c, 1, (0, 0, 255), 2)
 
+                    # clustering
                     centers, sizels = clusterWithSize(ls, thresh=100)
 
+                # tracking
                 objs = tracker.update(centers)
-                '''
-                for (ID, cent) in objs.items():
-                    if tracker.objects_TF[ID] == True:
-                        text = "ID {}".format(ID)
-                        cv2.putText(vis, text, (cent[-1][0] - 10, cent[-1][1] - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1)
-                '''
+                
+                merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
+
+                # visualize tracking results
                 for ID in tracker.objects_TF:
                     if tracker.objects_TF[ID] == True:
                         text = "ID {}".format(ID)
@@ -282,60 +282,12 @@ class App:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1) 
 
-
-                '''
-                thold1 = cv2.cvtColor(thold1, cv2.COLOR_GRAY2BGR)
-                
-                kpt = cv2.cvtColor(thold1, cv2.COLOR_BGR2GRAY)
-                kpt_inv = cv2.bitwise_not(kpt)
-                params = cv2.SimpleBlobDetector_Params()
-                params.minThreshold = 0
-                params.maxThreshold = 255
-                params.filterByArea = True
-                params.minArea = 15
-                params.filterByInertia = False
-                params.minInertiaRatio = 0.1
-                params.filterByColor = False
-                params.blobColor = 0
-                params.filterByCircularity = False
-                params.filterByConvexity = False
-                params.minConvexity = 0.5
-                detector = cv2.SimpleBlobDetector_create(params)
-                kpts = detector.detect(kpt_inv)
-                
-                
-                if len(kpts) > 0:
-                    ls = []
-                    for i in range(len(kpts)):
-                        ls.append((kpts[i].pt, kpts[i].size))
-                        if kpts[i].size > 20:
-                            print("Avoid!!")
-                            cv2.putText(vis, "Avoid!!", (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
-                            # cv2.putText(vis, str(np.round_(ls[-1], 2)), (200, 650), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
-                    print(ls)
-                
-
-                if len(kpts) > 0:
-                    ls = []
-                    for i in kpts:
-                        ls.append(i.pt)
-                
-                    centers = cluster(ls, thresh=30)
-                    print(centers)
-                
-
-                vis = cv2.drawKeypoints(vis, kpts, np.array([]), (0, 0, 255),
-                                        cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-                thold1 = cv2.drawKeypoints(thold1, kpts, np.array([]), (0, 0, 255),
-                                        cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-                '''
-                
-
+                # draw
                 final = np.hstack((vis, merged, thold1))
                 cv2.imshow("frame", final)
 
             # waitkey
-            k = cv2.waitKey(1) & 0xFF
+            k = cv2.waitKey(0) & 0xFF
 
             # interrupt
             if k == 27:

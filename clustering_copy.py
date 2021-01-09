@@ -3,11 +3,12 @@ import imutils
 import numpy as np
 import argparse
 import time
+from collections import deque
 from imgops.subtract_imgs import subtract_images
 from imgops.get_optflow import opticalflow
 from imgops.videostream import VideoStream
 from logicops.cluster import clusterwithsize
-from logicops.tracker_copy import Tracker
+from logicops.tracker2 import Tracker
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=15, qualityLevel=0.1, minDistance=3, blockSize=7, useHarrisDetector=False)
@@ -140,8 +141,8 @@ class App:
                     #img2 = cv2.GaussianBlur(img2, gaussiankernel, 0)
 
                     # subtracted images
-                    subt21 = subtract_images(warped1to2, img2, clip=15, isColor=False)
-                    subt23 = subtract_images(warped3to2, img2, clip=15, isColor=False)
+                    subt21 = subtract_images(warped1to2, img2, clip=15)
+                    subt23 = subtract_images(warped3to2, img2, clip=15)
 
                     # merge subtracted images
                     subt21 = subt21[15:h - 15, 15:w - 15]

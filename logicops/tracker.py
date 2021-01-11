@@ -5,13 +5,13 @@ import numpy as np
 
 
 class Tracker():
-    def __init__(self, thresh=35, maxDisappeared=3, track_length=10, track_start_length=5):
+    def __init__(self, dist_thresh=25, maxDisappeared=4, track_length=10, track_start_length=5):
         self.nextID = 0
         self.tempID = 100
         self.objects = OrderedDict()
         self.objects_TF = OrderedDict()
         self.disappeared = OrderedDict()
-        self.thresh = thresh
+        self.dist_thresh = dist_thresh
         self.maxDisappeared = maxDisappeared
         self.track_length = track_length
         self.track_start_length = track_start_length
@@ -38,7 +38,7 @@ class Tracker():
             for i in list(self.disappeared.keys()):
                 self.disappeared[i] += 1
 
-                if self.disappeared[i] > self.thresh:
+                if self.disappeared[i] == self.maxDisappeared:
                     self.deregister(i)
 
             return self.objects
@@ -64,7 +64,7 @@ class Tracker():
                 if row in usedrows or col in usedcols:
                     continue
 
-                if D[row][col] < self.thresh:
+                if D[row][col] < self.dist_thresh:
                     objectID = IDs[row]
                     self.objects[objectID].append(pts[col])
                     self.disappeared[objectID] = 0
@@ -79,7 +79,7 @@ class Tracker():
                     objectID = IDs[row]
                     self.disappeared[objectID] += 1
 
-                    if self.disappeared[objectID] > self.maxDisappeared:
+                    if self.disappeared[objectID] == self.maxDisappeared:
                         self.deregister(objectID)
 
             else:

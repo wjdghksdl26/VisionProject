@@ -279,9 +279,14 @@ class App:
                     if tracker.objects_TF[ID] == True:
                         text = "ID {}".format(ID)
                         cent = objs[ID]
-                        cv2.putText(vis, text, (cent[-1][0] - 10, cent[-1][1] - 10),
+                        print(cent)
+                        centx, centy = kalman_filter(cent)
+                        #cv2.putText(vis, text, (cent[-1][0] - 10, cent[-1][1] - 10),
+                            #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        #cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1)
+                        cv2.putText(vis, text, (int(centx[-1]) - 10, int(centy[-1]) - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1)
+                        cv2.circle(vis, (int(centx[-1]), int(centy[-1])), 4, (0, 255, 0), -1) 
 
                 # draw
                 final = np.hstack((vis, merged, thold1))

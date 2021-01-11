@@ -70,15 +70,11 @@ def clusterWithSize(pts, thresh=30):
 
         #weighed average
         for pt in group:
-            #rx = rx + j[0][0]
-            #ry = ry + j[0][1]
             rx = rx + pt[0][0] * pt[1]
             ry = ry + pt[0][1] * pt[2]
             rw = rw + pt[1]
             rh = rh + pt[2]
 
-        #x = rx / len(group)
-        #y = ry / len(group)
         x = rx / rw
         y = ry / rh
         centerls.append((int(x), int(y)))

@@ -275,7 +275,7 @@ class App:
                 
                 merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
 
-                # visualize tracking results
+                # Apply Kalman filter to tracking results
                 for ID in tracker.objects_TF:
                     if tracker.objects_TF[ID] == True:
                         text = "ID {}".format(ID)
@@ -301,10 +301,10 @@ class App:
                         #cv2.putText(vis, text, (int(centx[-1]) - 10, int(centy[-1]) - 10),
                         #    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         #cv2.circle(vis, (int(centx[-1]), int(centy[-1])), 4, (0, 255, 0), -1)
+                        # visualize tracking results
                         cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
-
 
                 # draw
                 final = np.hstack((vis, merged, thold1))

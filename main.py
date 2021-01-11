@@ -287,7 +287,7 @@ class App:
                 cv2.imshow("frame", final)
 
             # waitkey
-            k = cv2.waitKey(0) & 0xFF
+            k = cv2.waitKey(1) & 0xFF
 
             # interrupt
             if k == 27:

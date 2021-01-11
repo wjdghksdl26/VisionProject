@@ -5,7 +5,7 @@ import time
 
 #measurements = np.asarray([(399,293),(403,299),(409,308),(416,315),(418,318),(420,323),(429,326),(423,328),(429,334),(431,337),(433,342),(434,352),(434,349),(433,350),(431,350),(430,349),(428,347),(427,345),(425,341),(429,338),(431,328),(410,313),(406,306),(402,299),(397,291),(391,294),(376,270),(372,272),(351,248),(336,244),(327,236),(307,220)])
 measurements = np.asarray([(164, 171), (166, 168), (166, 165), (169, 163), (171, 159), (176, 157), (170, 153), (173, 151), (176, 148), (168, 143), (171, 142), (171, 139), (175, 136), (166, 131), (168, 128), (165, 123), (162, 118), (164, 115), (163, 110), (160, 104), (165, 100), (157, 94), (160, 84), (158, 74), (160, 68), (158, 59), (160, 50), (161, 40), (164, 30), (168, 16)])
-measurements = np.asarray([(164, 171), (166, 168), (166, 165), (169, 163), (171, 159), (176, 157), (170, 153), (173, 151), (176, 148), (168, 143), (171, 142), (171, 139), (175, 136), (166, 131), (168, 128), (165, 123), (162, 118), (164, 115), (163, 110), (160, 104), (165, 100), (157, 94), (160, 84), (158, 74), (160, 68)])
+measurements = np.asarray([(164, 171), (166, 168), (166, 165), (169, 163), (171, 159), (176, 157), (170, 153), (173, 151), (176, 148), (168, 143)])
 initial_state_mean = [measurements[0, 0],
                       0,
                       measurements[0, 1],
@@ -18,13 +18,15 @@ transition_matrix = [[1, 1, 0, 0],
 
 observation_matrix = [[1, 0, 0, 0],
                       [0, 0, 1, 0]]
-
+time_before = time.time()
 kf1 = KalmanFilter(transition_matrices = transition_matrix,
                   observation_matrices = observation_matrix,
                   initial_state_mean = initial_state_mean)
 
 kf1 = kf1.em(measurements, n_iter=5)
 (smoothed_state_means, smoothed_state_covariances) = kf1.smooth(measurements)
+
+print("Time to build and train kf1: %s seconds" % (time.time() - time_before))
 
 plt.figure(1)
 times = range(measurements.shape[0])
@@ -37,13 +39,12 @@ plt.show()
 time_before = time.time()
 n_real_time = 3
 
-print(kf1.observation_covariance)
-oc = np.array([[5,1],[1,5]])
+# real time
 
 kf3 = KalmanFilter(transition_matrices = transition_matrix,
                   observation_matrices = observation_matrix,
                   initial_state_mean = initial_state_mean,
-                  observation_covariance = 10*oc,
+                  observation_covariance = 10*kf1.observation_covariance,
                   em_vars=['transition_covariance', 'initial_state_covariance'])
 
 kf3 = kf3.em(measurements[:-n_real_time, :], n_iter=5)

@@ -9,7 +9,7 @@ from imgops.get_optflow import OpticalFlow
 from imgops.videostream import VideoStream
 from logicops.cluster import clusterWithSize
 from logicops.tracker import Tracker
-from logicops.kalman import kalman_filter
+from logicops.kalman2 import Kfilter
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
@@ -35,6 +35,7 @@ class App:
         self.tracks = deque()
         self.vid = videoPath
         self.frame_idx = 0
+        self.initiate_kalmanFilter = 7
 
     def run(self):
         # images for initialization
@@ -279,14 +280,31 @@ class App:
                     if tracker.objects_TF[ID] == True:
                         text = "ID {}".format(ID)
                         cent = objs[ID]
-                        print(cent)
-                        centx, centy = kalman_filter(cent)
+                        new = cent[-1]
+
+                        if len(objs[ID]) == self.initiate_kalmanFilter:
+                            kftext = "Kalman Filter Activated for object ID {}\n".format(ID)
+                            print(kftext)
+                            kf = Kfilter()
+                            kf.trainKfilter(cent)
+
+                        if len(objs[ID]) > self.initiate_kalmanFilter:
+                            kftext = "Kalman Filter Updating for object ID {}\n".format(ID)
+                            print(kftext)
+                            new = kf.updateKfilter(objs[ID][-1])
+
+                        #print(cent)
+                        #centx, centy = kalman_filter(cent)
                         #cv2.putText(vis, text, (cent[-1][0] - 10, cent[-1][1] - 10),
-                            #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        #    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         #cv2.circle(vis, (cent[-1][0], cent[-1][1]), 4, (0, 255, 0), -1)
-                        cv2.putText(vis, text, (int(centx[-1]) - 10, int(centy[-1]) - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        cv2.circle(vis, (int(centx[-1]), int(centy[-1])), 4, (0, 255, 0), -1) 
+                        #cv2.putText(vis, text, (int(centx[-1]) - 10, int(centy[-1]) - 10),
+                        #    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        #cv2.circle(vis, (int(centx[-1]), int(centy[-1])), 4, (0, 255, 0), -1)
+                        cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
+                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
+
 
                 # draw
                 final = np.hstack((vis, merged, thold1))

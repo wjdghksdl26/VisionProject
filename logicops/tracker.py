@@ -5,7 +5,7 @@ import numpy as np
 
 
 class Tracker():
-    def __init__(self, dist_thresh=25, maxDisappeared=4, track_length=10, track_start_length=5):
+    def __init__(self, dist_thresh=25, maxDisappeared=3, track_length=10, track_start_length=5):
         self.nextID = 0
         self.tempID = 100
         self.objects = OrderedDict()
@@ -25,14 +25,18 @@ class Tracker():
     def deregister(self, objID):
         del self.objects[objID]
         del self.disappeared[objID]
+        if objID not in self.objects_TF:
+            return
         if self.objects_TF[objID] == False:
             del self.objects_TF[objID]
             self.tempID -= 1
         else:
             del self.objects_TF[objID]
-            self.nextID -= 1
+            truepts = sum(self.objects_TF.values())
+            self.nextID = truepts
 
     def update(self, pts):
+        # truepts = sum(self.objects_TF.values())
         # pts = list of tuples
         if len(pts) == 0:
             for i in list(self.disappeared.keys()):
@@ -89,9 +93,11 @@ class Tracker():
             for key in list(self.objects.keys()):
                 if len(self.objects[key]) == self.track_start_length:
                     self.objects_TF[self.nextID] = True
-                    del self.objects_TF[key]
+                    if key in self.objects_TF:
+                        del self.objects_TF[key]
                     self.objects[self.nextID] = self.objects.pop(key)
                     self.disappeared[self.nextID] = self.disappeared.pop(key)
-                    self.nextID += 1
+                    truepts = sum(self.objects_TF.values())
+                    self.nextID = truepts
 
         return self.objects

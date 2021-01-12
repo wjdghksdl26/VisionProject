@@ -19,14 +19,14 @@ class Kfilter():
         pts = np.asarray(pts)
         self.initial_state_mean = [pts[0, 0], 0, pts[0, 1], 0]
         kf1 = KalmanFilter(transition_matrices = self.transition_mat,
-                  observation_matrices = self.observation_mat,
-                  initial_state_mean = self.initial_state_mean)
+                           observation_matrices = self.observation_mat,
+                           initial_state_mean = self.initial_state_mean)
         kf1 = kf1.em(pts, n_iter=5)
         self.kf3 = KalmanFilter(transition_matrices = self.transition_mat,
-                  observation_matrices = self.observation_mat,
-                  initial_state_mean = self.initial_state_mean,
-                  observation_covariance = 5*kf1.observation_covariance,
-                  em_vars=['transition_covariance', 'initial_state_covariance'])
+                                observation_matrices = self.observation_mat,
+                                initial_state_mean = self.initial_state_mean,
+                                observation_covariance = 20 * kf1.observation_covariance,
+                                em_vars=['transition_covariance', 'initial_state_covariance'])
         self.kf3 = self.kf3.em(pts, n_iter=5)
         (filtered_state_means, filtered_state_covariances) = self.kf3.filter(pts)
         self.x_now = filtered_state_means[-1, :]
@@ -35,8 +35,8 @@ class Kfilter():
     def updateKfilter(self, lastpt):
         lastpt = np.asarray(lastpt)
         (self.x_now, self.P_now) = self.kf3.filter_update(filtered_state_mean = self.x_now,
-                                       filtered_state_covariance = self.P_now,
-                                       observation = lastpt)
+                                                          filtered_state_covariance = self.P_now,
+                                                          observation = lastpt)
         
         return (self.x_now[0], self.x_now[2])
 

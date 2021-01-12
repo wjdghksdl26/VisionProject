@@ -256,7 +256,7 @@ class App:
 
                 # pick components with threshold
                 centers = []
-                if 1 < len(centroids) < 50:
+                if 1 < len(centroids) < 25:
                     ls = []
                     for c, s in zip(centroids, stats):
                         if 10 < s[4] < 5000:
@@ -283,7 +283,7 @@ class App:
                         new = cent[-1]
 
                         if len(objs[ID]) == self.initiate_kalmanFilter:
-                            kftext = "Kalman Filter Activated for object ID {}\n".format(ID)
+                            kftext = "Kalman Filter Activated!!\n"
                             print(kftext)
                             kf = Kfilter()
                             kf.trainKfilter(cent)

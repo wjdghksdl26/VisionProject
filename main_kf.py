@@ -256,7 +256,7 @@ class App:
 
                 # pick components with threshold
                 centers = []
-                if 1 < len(centroids) < 25:
+                if 0 < len(centroids) < 25:
                     ls = []
                     for c, s in zip(centroids, stats):
                         if 10 < s[4] < 5000:

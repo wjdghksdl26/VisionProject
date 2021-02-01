@@ -12,7 +12,7 @@ from logicops.tracker import Tracker
 from logicops.kalman2 import Kfilter
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
-feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
+feature_params = dict(maxCorners=15, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
 lk_params = dict(winSize=(15, 15), maxLevel=3, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
@@ -31,21 +31,21 @@ class App:
     def __init__(self, videoPath):
         self.track_len = 5
         self.detect_interval = 1
-        self.mask_size = 50
+        self.mask_size = 70
         self.tracks = deque()
         self.vid = videoPath
         self.frame_idx = 0
-        self.initiate_kalmanFilter = 7
+        self.initiate_kalmanFilter = 12
 
     def run(self):
         # images for initialization
         ret, frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        frame1 = imutils.resize(frame1, width=300)
+        #frame1 = imutils.resize(frame1, width=300)
 
         ret, frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        frame2 = imutils.resize(frame2, width=300)
+        #frame2 = imutils.resize(frame2, width=300)
 
         # video size
         h, w = frame1.shape
@@ -81,8 +81,8 @@ class App:
 
         # kernel for morphology operations
         kernel = np.ones((3, 3))
-        kernel5 = np.ones((5, 5))
-        gaussiankernel = (3, 3)
+        #kernel = np.ones((5, 5))
+        #gaussiankernel = (3, 3)
 
         # object tracker initialization
         tracker = Tracker()
@@ -100,10 +100,10 @@ class App:
             # current frame
             vis = frame3.copy()
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
-            frame3 = imutils.resize(frame3, width=300)
+            #frame3 = imutils.resize(frame3, width=300)
 
             # copy of current frame (for visualization)
-            vis = imutils.resize(vis, width=300)
+            #vis = imutils.resize(vis, width=300)
             vis = vis[15:h-15, 15:w-15]
 
             # begin motion estimation
@@ -131,10 +131,10 @@ class App:
                     print("Frame", self.frame_idx)
 
                     # warping operation
-                    #HMat1to2 = np.linalg.inv(HMat1to2)
-                    # warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR)
+                    HMat1to2 = np.linalg.inv(HMat1to2)
+                    warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR)
                     # OpenCV 3.x does not have cv2.WARP_INVERSE_MAP
-                    warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
+                    #warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
                     warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h), cv2.INTER_LINEAR)
 
                     # Gaussian blur operation to ease impact of edges
@@ -156,16 +156,16 @@ class App:
                     # subt21 = cv2.dilate(subt21, kernel, iterations=1).astype('int32')
                     # subt23 = cv2.dilate(subt23, kernel, iterations=1).astype('int32')
                     merged = (subt21 + subt23) / 2
-                    merged = np.where(merged <= 50, 0, merged).astype('uint8')
-                    merged = merged * 2
+                    merged = np.where(merged <= 40, 0, merged).astype('uint8')
+                    # merged = merged * 2
                     # merged = cv2.dilate(merged, kernel, iterations=1)
 
                     # ---------- essential operations finished ----------
 
                     # crude thresholding type 1
                     thold1 = merged.copy()
-                    # thold1 = cv2.erode(thold1, kernel, iterations=1)
-                    _, thold1 = cv2.threshold(thold1, 60, 255, cv2.THRESH_BINARY)
+                    thold1 = cv2.erode(thold1, kernel, iterations=1)
+                    _, thold1 = cv2.threshold(thold1, 40, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
@@ -211,10 +211,10 @@ class App:
                         p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
                     if reg4 < 10:
                         p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    #if reg5 < 15:
-                    #    p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    #if reg6 < 15:
-                    #    p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                    if reg5 < 10:
+                        p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
+                    if reg6 < 10:
+                        p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
 
                 # initialization(only runs at first frame)
                 if self.frame_idx == 0:
@@ -222,10 +222,9 @@ class App:
                     p2 = cv2.goodFeaturesToTrack(frame2, mask=mask2, **feature_params)
                     p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
                     p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    #p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    #p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
-                    p5 = None
-                    p6 = None
+                    p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
+                    p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+
 
                     for p in [p1, p2, p3, p4, p5, p6]:
                         if p is not None:
@@ -256,22 +255,25 @@ class App:
 
                 # pick components with threshold
                 centers = []
-                if 1 < len(centroids) < 25:
+                if 0 < len(centroids) < 25:
                     ls = []
                     for c, s in zip(centroids, stats):
-                        if 10 < s[4] < 5000:
+                        if 75 < s[4] < 5000:
                             c = tuple(c.astype(int))
                             sizewidth = int(s[2])
                             sizeheight = int(s[3])
                             ls.append((c, sizewidth, sizeheight))
                             # mark found components
-                            cv2.circle(thold1, c, 1, (0, 0, 255), 2)
+                            #cv2.circle(thold1, c, 1, (0, 0, 255), 2)
 
                     # clustering
-                    centers, sizels = clusterWithSize(ls, thresh=100)
+                    centers, sizels = clusterWithSize(ls, thresh=150)
+                    for c in centers:
+                        cv2.circle(thold1, c, 1, (0, 0, 255), 2)
 
                 # tracking
                 objs = tracker.update(centers)
+                print(objs)
                 
                 merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
 
@@ -292,6 +294,8 @@ class App:
                             kftext = "Kalman Filter Updating for object ID {}\n".format(ID)
                             print(kftext)
                             new = kf.updateKfilter(objs[ID][-1])
+                            objs[ID][-1] = new
+                            print(list(objs[ID]))
 
                         #print(cent)
                         #centx, centy = kalman_filter(cent)
@@ -305,9 +309,12 @@ class App:
                         cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
+                        cv2.putText(thold1, text, (int(new[0]) - 10, int(new[1]) - 10),
+                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
 
                 # draw
-                final = np.hstack((vis, merged, thold1))
+                final = np.hstack((vis, thold1))
                 cv2.imshow("frame", final)
 
             # waitkey
@@ -323,6 +330,7 @@ class App:
             FPS = 1/(t_end-t_start+0.0001)
             totalFPS += FPS
             # print("FPS : ", "%.1f" % round(FPS, 3))
+
 
         # terminate
         self.vid.release()

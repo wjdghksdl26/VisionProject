@@ -5,7 +5,7 @@ import numpy as np
 
 
 class Tracker():
-    def __init__(self, dist_thresh=25, maxDisappeared=3, track_length=10, track_start_length=5):
+    def __init__(self, dist_thresh=100, maxDisappeared=2, track_length=10, track_start_length=3):
         self.nextID = 0
         self.tempID = 100
         self.objects = OrderedDict()
@@ -92,12 +92,15 @@ class Tracker():
 
             for key in list(self.objects.keys()):
                 if len(self.objects[key]) == self.track_start_length:
-                    self.objects_TF[self.nextID] = True
-                    if key in self.objects_TF:
-                        del self.objects_TF[key]
-                    self.objects[self.nextID] = self.objects.pop(key)
-                    self.disappeared[self.nextID] = self.disappeared.pop(key)
-                    truepts = sum(self.objects_TF.values())
-                    self.nextID = truepts
+                    if self.objects_TF[key] == True:
+                        continue
+                    else:
+                        self.objects_TF[self.nextID] = True
+                        if key in self.objects_TF:
+                            del self.objects_TF[key]
+                        self.objects[self.nextID] = self.objects.pop(key)
+                        self.disappeared[self.nextID] = self.disappeared.pop(key)
+                        truepts = sum(self.objects_TF.values())
+                        self.nextID = truepts
 
         return self.objects

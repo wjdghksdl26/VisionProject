@@ -13,14 +13,17 @@ from logicops.kalman2 import Kfilter
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=15, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(15, 15), maxLevel=3, criteria=termination, minEigThreshold=1e-4)
+lk_params = dict(winSize=(15, 15), maxLevel=1, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
 args = vars(ap.parse_args())
 
 if args["video"] == "cam":
-    video = VideoStream(src=0).start()
+    #video = VideoStream(src=0).start()
+    video = cv2.VideoCapture(0)
+    video.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 else:
     video = cv2.VideoCapture(args["video"])
 
@@ -41,11 +44,11 @@ class App:
         # images for initialization
         ret, frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        #frame1 = imutils.resize(frame1, width=300)
+        frame1 = imutils.resize(frame1, width=320)
 
         ret, frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        #frame2 = imutils.resize(frame2, width=300)
+        frame2 = imutils.resize(frame2, width=320)
 
         # video size
         h, w = frame1.shape
@@ -93,6 +96,7 @@ class App:
 
             # read and process frame
             ret, frame3 = self.vid.read()
+            frame3 = imutils.resize(frame3, width=320)
             if not ret:
                 print("End of video stream!")
                 break
@@ -100,7 +104,6 @@ class App:
             # current frame
             vis = frame3.copy()
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
-            #frame3 = imutils.resize(frame3, width=300)
 
             # copy of current frame (for visualization)
             #vis = imutils.resize(vis, width=300)
@@ -111,21 +114,18 @@ class App:
                 img1, img2, img3 = frame1, frame2, frame3
 
                 # optical flow from img2 to img3
-                new_tracks = OpticalFlow(img2, img3, self.tracks, lk_params)
-
-                # update track
-                self.tracks = new_tracks
+                self.tracks = OpticalFlow(img2, img3, self.tracks, lk_params)
 
                 # points in img3
-                src23 = np.float32([[list(tr[-1])] for tr in self.tracks])
+                src23 = np.float32([list(tr[-1]) for tr in self.tracks])
                 # points in img2
-                dst23 = np.float32([[list(tr[-2])] for tr in self.tracks])
+                dst23 = np.float32([list(tr[-2]) for tr in self.tracks])
 
                 if len(dst23) >= 12:
                     # Homography Mat. that warps img1 to fit img2
                     HMat1to2 = HMat3to2
                     # Homography Mat. that warps img3 to fit img2
-                    HMat3to2, stat = cv2.findHomography(src23, dst23, cv2.RANSAC, 1.0)
+                    HMat3to2, stat = cv2.findHomography(src23, dst23, cv2.RANSAC, 5.0)
 
                     # current frame
                     print("Frame", self.frame_idx)
@@ -314,7 +314,7 @@ class App:
                         cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
 
                 # draw
-                final = np.hstack((vis, thold1))
+                final = np.hstack((vis, merged, thold1))
                 cv2.imshow("frame", final)
 
             # waitkey

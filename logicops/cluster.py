@@ -77,7 +77,9 @@ def clusterWithSize(pts, thresh=30):
 
         x = rx / rw
         y = ry / rh
-        centerls.append((int(x), int(y)))
-        sizels.append((int(rw), int(rh)))
+        #centerls.append((int(x), int(y)))
+        #sizels.append((int(rw), int(rh)))
+        centerls.append((x, y))
+        sizels.append((rw, rh))
 
     return centerls, sizels

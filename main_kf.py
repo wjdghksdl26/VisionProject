@@ -12,8 +12,8 @@ from logicops.tracker import Tracker
 from logicops.kalman2 import Kfilter
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
-feature_params = dict(maxCorners=15, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(15, 15), maxLevel=3, criteria=termination, minEigThreshold=1e-4)
+feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
+lk_params = dict(winSize=(35, 35), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
@@ -23,7 +23,7 @@ if args["video"] == "cam":
     #video = VideoStream(src=0).start()
     video = cv2.VideoCapture(0)
     video.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    video.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 else:
     video = cv2.VideoCapture(args["video"])
 
@@ -143,21 +143,25 @@ class App:
                     # img2 = cv2.GaussianBlur(img2, gaussiankernel, 0)
 
                     # subtracted images
-                    subt21 = SubtractImages(warped1to2, img2, clip=15)
-                    subt23 = SubtractImages(warped3to2, img2, clip=15)
+                    # subt21 = SubtractImages(warped1to2, img2, clip=15)
+                    # subt23 = SubtractImages(warped3to2, img2, clip=15)
+                    subt21 = np.clip(cv2.subtract(warped1to2, img2), 15, None)
+                    subt23 = np.clip(cv2.subtract(warped3to2, img2), 15, None)
 
                     # merge subtracted images
                     subt21 = subt21[15:h - 15, 15:w - 15]
                     subt23 = subt23[15:h - 15, 15:w - 15]
-                    subt21 = cv2.medianBlur(subt21, 3)
-                    subt23 = cv2.medianBlur(subt23, 3)
+                    #subt21 = cv2.medianBlur(subt21, 3)
+                    #subt23 = cv2.medianBlur(subt23, 3)
+                    #subt21 = cv2.blur(subt21, (3, 3))
+                    #subt23 = cv2.blur(subt23, (3, 3))
                     # subt21 = cv2.erode(subt21, kernel)
                     # subt23 = cv2.erode(subt23, kernel)
                     # subt21 = cv2.dilate(subt21, kernel, iterations=1).astype('int32')
                     # subt23 = cv2.dilate(subt23, kernel, iterations=1).astype('int32')
-                    merged = (subt21 + subt23) / 2
-                    merged = np.where(merged <= 40, 0, merged).astype('uint8')
-                    # merged = merged * 2
+                    merged = ((subt21 + subt23) / 2).astype('uint8')
+                    merged = cv2.blur(merged, (3, 3))
+                    # merged = np.where(merged <= 40, 0, merged).astype('uint8')
                     # merged = cv2.dilate(merged, kernel, iterations=1)
 
                     # ---------- essential operations finished ----------
@@ -165,13 +169,13 @@ class App:
                     # crude thresholding type 1
                     thold1 = merged.copy()
                     thold1 = cv2.erode(thold1, kernel, iterations=1)
-                    _, thold1 = cv2.threshold(thold1, 40, 255, cv2.THRESH_BINARY)
+                    _, thold1 = cv2.threshold(thold1, 45, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
                     for tr in self.tracks:
                             cv2.circle(vis, tuple(np.int32(tr[-1])), 2, (0, 0, 255), -1)
-                    cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
+                    #cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                 # in case of motion compensation failure
                 if len(dst23) < 12:
@@ -235,6 +239,7 @@ class App:
                     initial_src = np.float32([[list(tr[-2])] for tr in initial_tracks])
                     initial_dst = np.float32([[list(tr[-1])] for tr in initial_tracks])
                     HMat3to2, _ = cv2.findHomography(initial_src, initial_dst, 0, 5.0)
+                    warped3to2 = np.zeros_like(frame2)
 
                 # append found feature points
                 for p in [p1, p2, p3, p4, p5, p6]:
@@ -258,10 +263,10 @@ class App:
                 if 0 < len(centroids) < 25:
                     ls = []
                     for c, s in zip(centroids, stats):
-                        if 75 < s[4] < 5000:
-                            c = tuple(c.astype(int))
-                            sizewidth = int(s[2])
-                            sizeheight = int(s[3])
+                        if 25 < s[4] < 5000:
+                            c = tuple(c)
+                            sizewidth = s[2]
+                            sizeheight = s[3]
                             ls.append((c, sizewidth, sizeheight))
                             # mark found components
                             #cv2.circle(thold1, c, 1, (0, 0, 255), 2)
@@ -269,7 +274,7 @@ class App:
                     # clustering
                     centers, sizels = clusterWithSize(ls, thresh=150)
                     for c in centers:
-                        cv2.circle(thold1, c, 1, (0, 0, 255), 2)
+                        cv2.circle(thold1, (int(c[0]), int(c[1])), 1, (0, 0, 255), 2)
 
                 # tracking
                 objs = tracker.update(centers)

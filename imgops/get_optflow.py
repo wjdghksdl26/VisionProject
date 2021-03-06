@@ -10,21 +10,24 @@ def OpticalFlow(img0, img1, tracks, params):
     err = err.squeeze()
 
     if p1 is not None:
-        p0r, st, err_ = cv2.calcOpticalFlowPyrLK(img1, img0, p1, None, **params)
-        d = abs(p0 - p0r).reshape(-1, 2).max(-1)
-        print(d)
-        print(err)
-        good = d < 0.7
-        print(good)
+        #p0r, st, err_ = cv2.calcOpticalFlowPyrLK(img1, img0, p1, None, **params)
+        #d = abs(p0 - p0r).reshape(-1, 2).max(-1)
+        #print(d)
+        #print(err)
+        #good = d < 0.7
+        #print(good)
         good_ = ((err > 0) & (err < 25))
-        print(good_)
-        print("Match :", good & good_)
+        #print(good_)
+        #print("Match :", good & good_)
         new_tracks = deque()
-        for tr, (x, y), good_flag in zip(tracks, p1.reshape(-1, 2), good):
+        for tr, (x, y), good_flag in zip(tracks, p1.reshape(-1, 2), good_):
             if not good_flag:
                 continue
 
-            if 100 < x < 220:
+            if 100.0 < x < 220.0 or x < 3.0 or x > 317.0:
+                continue
+
+            if y < 3.0:
                 continue
 
             tr.append((x, y))

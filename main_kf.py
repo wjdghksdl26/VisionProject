@@ -193,6 +193,7 @@ class App:
                     p1 = p2 = p3 = p4 = p5 = p6 = None
                     #reg1 = reg2 = reg3 = reg4 = reg5 = reg6 = 0
 
+                    # cython boost
                     dst = np.asarray(dst23, dtype=int)
                     reg1, reg2, reg3, reg4, reg5, reg6 = count(dst, x1, x2, y1, y2, y3, y4, w, h)
                     '''

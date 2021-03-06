@@ -35,7 +35,7 @@ class App:
         self.tracks = deque()
         self.vid = videoPath
         self.frame_idx = 0
-        self.initiate_kalmanFilter = 12
+        self.initiate_kalmanFilter = 5
 
     def run(self):
         # images for initialization
@@ -104,7 +104,7 @@ class App:
             
 
             # copy of current frame (for visualization)
-            #vis = imutils.resize(vis, width=300)
+            vis = imutils.resize(vis, width=320)
             vis = vis[15:h-15, 15:w-15]
 
             # begin motion estimation
@@ -129,7 +129,9 @@ class App:
                     HMat3to2, stat = cv2.findHomography(src23, dst23, cv2.RANSAC, 1.0)
 
                     # current frame
-                    print("Frame", self.frame_idx)
+                    print("\nFrame", self.frame_idx)
+                    #print("H12 =\n", HMat1to2)
+                    #print("H32 =\n", HMat3to2)
 
                     # warping operation
                     HMat1to2 = np.linalg.inv(HMat1to2)
@@ -170,6 +172,7 @@ class App:
                     thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
+
                     for tr in self.tracks:
                             cv2.circle(vis, tuple(np.int32(tr[-1])), 2, (0, 0, 255), -1)
                     cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
@@ -274,7 +277,7 @@ class App:
 
                 # tracking
                 objs = tracker.update(centers)
-                print(objs)
+                #print(objs)
                 
                 merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
 
@@ -307,6 +310,7 @@ class App:
                         #    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         #cv2.circle(vis, (int(centx[-1]), int(centy[-1])), 4, (0, 255, 0), -1)
                         # visualize tracking results
+                        
                         cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)

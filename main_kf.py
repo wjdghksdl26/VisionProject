@@ -193,7 +193,8 @@ class App:
                     p1 = p2 = p3 = p4 = p5 = p6 = None
                     #reg1 = reg2 = reg3 = reg4 = reg5 = reg6 = 0
 
-                    reg1, reg2, reg3, reg4, reg5, reg6 = count(dst23, x1, x2, y1, y2, y3, y4, w, h)
+                    dst = np.asarray(dst23, dtype=int)
+                    reg1, reg2, reg3, reg4, reg5, reg6 = count(dst, x1, x2, y1, y2, y3, y4, w, h)
                     '''
                     #for tr in dst23:
                         #(x, y) = tr

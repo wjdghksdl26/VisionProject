@@ -40,12 +40,12 @@ class App:
     def run(self):
         # images for initialization
         ret, frame1 = self.vid.read()
+        frame1 = imutils.resize(frame1, width=320)
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        #frame1 = imutils.resize(frame1, width=300)
 
         ret, frame2 = self.vid.read()
+        frame2 = imutils.resize(frame2, width=320)
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        #frame2 = imutils.resize(frame2, width=300)
 
         # video size
         h, w = frame1.shape
@@ -93,6 +93,7 @@ class App:
 
             # read and process frame
             ret, frame3 = self.vid.read()
+            frame3 = imutils.resize(frame3, width=320)
             if not ret:
                 print("End of video stream!")
                 break
@@ -100,7 +101,7 @@ class App:
             # current frame
             vis = frame3.copy()
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
-            #frame3 = imutils.resize(frame3, width=300)
+            
 
             # copy of current frame (for visualization)
             #vis = imutils.resize(vis, width=300)
@@ -314,7 +315,7 @@ class App:
                         cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
 
                 # draw
-                final = np.hstack((vis, thold1))
+                final = np.hstack((vis, merged, thold1))
                 cv2.imshow("frame", final)
 
             # waitkey

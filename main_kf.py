@@ -10,10 +10,11 @@ from imgops.videostream import VideoStream
 from logicops.cluster import clusterWithSize
 from logicops.tracker import Tracker
 from logicops.kalman2 import Kfilter
+from logicops.count import count
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(35, 35), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
+lk_params = dict(winSize=(45, 45), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
@@ -117,15 +118,15 @@ class App:
                 self.tracks = OpticalFlow(img2, img3, self.tracks, lk_params)
 
                 # points in img3
-                src23 = np.float32([list(tr[-1]) for tr in self.tracks])
+                dst23 = np.float32([list(tr[-1]) for tr in self.tracks])
                 # points in img2
-                dst23 = np.float32([list(tr[-2]) for tr in self.tracks])
+                src23 = np.float32([list(tr[-2]) for tr in self.tracks])
 
                 if len(dst23) >= 12:
                     # Homography Mat. that warps img1 to fit img2
                     HMat1to2 = HMat3to2
                     # Homography Mat. that warps img3 to fit img2
-                    HMat3to2, stat = cv2.findHomography(src23, dst23, cv2.RANSAC, 1.0)
+                    HMat3to2, stat = cv2.findHomography(dst23, src23, cv2.RANSAC, 1.0)
 
                     # current frame
                     print("Frame", self.frame_idx)
@@ -190,10 +191,12 @@ class App:
                 # after initialization
                 if self.frame_idx != 0:
                     p1 = p2 = p3 = p4 = p5 = p6 = None
-                    reg1 = reg2 = reg3 = reg4 = reg5 = reg6 = 0
+                    #reg1 = reg2 = reg3 = reg4 = reg5 = reg6 = 0
 
-                    for tr in self.tracks:
-                        (x, y) = tr[-1]
+                    reg1, reg2, reg3, reg4, reg5, reg6 = count(dst23, x1, x2, y1, y2, y3, y4, w, h)
+                    '''
+                    #for tr in dst23:
+                        #(x, y) = tr
                         if 0 < x < x1 and 0 < y < y1:
                             reg1 += 1
                         if x2 < x < w and 0 < y < y1:
@@ -206,19 +209,20 @@ class App:
                             reg5 += 1
                         if x2 < x < w and y2 < y < y3:
                             reg6 += 1
+                    '''
 
                     if reg1 < 10:
-                        p1 = cv2.goodFeaturesToTrack(frame2, mask=mask1, **feature_params)
+                        p1 = cv2.goodFeaturesToTrack(frame3, mask=mask1, **feature_params)
                     if reg2 < 10:
-                        p2 = cv2.goodFeaturesToTrack(frame2, mask=mask2, **feature_params)
+                        p2 = cv2.goodFeaturesToTrack(frame3, mask=mask2, **feature_params)
                     if reg3 < 10:
-                        p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
+                        p3 = cv2.goodFeaturesToTrack(frame3, mask=mask3, **feature_params)
                     if reg4 < 10:
-                        p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
+                        p4 = cv2.goodFeaturesToTrack(frame3, mask=mask4, **feature_params)
                     if reg5 < 10:
-                        p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
+                        p5 = cv2.goodFeaturesToTrack(frame3, mask=mask5, **feature_params)
                     if reg6 < 10:
-                        p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                        p6 = cv2.goodFeaturesToTrack(frame3, mask=mask6, **feature_params)
 
                 # initialization(only runs at first frame)
                 if self.frame_idx == 0:

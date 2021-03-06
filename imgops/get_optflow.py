@@ -24,7 +24,7 @@ def OpticalFlow(img0, img1, tracks, params):
             if not good_flag:
                 continue
 
-            if 70 < x < 250 or x < 5 or x > 315:
+            if 100 < x < 220:
                 continue
 
             tr.append((x, y))

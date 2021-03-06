@@ -13,7 +13,7 @@ from logicops.kalman2 import Kfilter
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=15, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(15, 15), maxLevel=1, criteria=termination, minEigThreshold=1e-4)
+lk_params = dict(winSize=(15, 15), maxLevel=3, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
@@ -125,7 +125,7 @@ class App:
                     # Homography Mat. that warps img1 to fit img2
                     HMat1to2 = HMat3to2
                     # Homography Mat. that warps img3 to fit img2
-                    HMat3to2, stat = cv2.findHomography(src23, dst23, cv2.RANSAC, 5.0)
+                    HMat3to2, stat = cv2.findHomography(src23, dst23, cv2.RANSAC, 1.0)
 
                     # current frame
                     print("Frame", self.frame_idx)

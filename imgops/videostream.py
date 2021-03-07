@@ -7,6 +7,7 @@ class VideoStream:
         self.stream = cv2.VideoCapture(src)
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+        self.stream.set(5, 60)
         (self.grabbed, self.frame) = self.stream.read()
 
         self.stopped = False

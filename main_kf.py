@@ -4,7 +4,7 @@ import numpy as np
 import argparse
 import time
 from collections import deque
-from imgops.subtract_imgs import SubtractImages
+# from imgops.subtract_imgs import SubtractImages
 from imgops.get_optflow import OpticalFlow
 from imgops.videostream import VideoStream
 from logicops.cluster import clusterWithSize
@@ -21,10 +21,10 @@ ap.add_argument("-v", "--video", type=str)
 args = vars(ap.parse_args())
 
 if args["video"] == "cam":
-    #video = VideoStream(src=0).start()
-    video = cv2.VideoCapture(0)
-    video.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    video.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    video = VideoStream(src=0).start()
+    #video = cv2.VideoCapture(0)
+    #video.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    #video.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 else:
     video = cv2.VideoCapture(args["video"])
 
@@ -34,7 +34,7 @@ np.set_printoptions(precision=3, suppress=True)
 class App:
     def __init__(self, videoPath):
         self.track_len = 5
-        self.detect_interval = 1
+        self.detect_interval = 2
         self.mask_size = 70
         self.tracks = deque()
         self.vid = videoPath
@@ -45,11 +45,13 @@ class App:
         # images for initialization
         ret, frame1 = self.vid.read()
         frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        frame1 = imutils.resize(frame1, width=320)
+        if args["video"] != "cam":
+            frame1 = imutils.resize(frame1, width=320)
 
         ret, frame2 = self.vid.read()
         frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        frame2 = imutils.resize(frame2, width=320)
+        if args["video"] != "cam":
+            frame2 = imutils.resize(frame2, width=320)
 
         # video size
         h, w = frame1.shape
@@ -80,13 +82,11 @@ class App:
         mask6 = np.zeros_like(frame1)
         mask6[y2:y3, x2:w] = 1
 
-        # performance index variables
-        totalFPS = 0
-
         # kernel for morphology operations
         kernel = np.ones((3, 3))
-        #kernel = np.ones((5, 5))
-        #gaussiankernel = (3, 3)
+
+        # performance index variables
+        totalFPS = 0
 
         # object tracker initialization
         tracker = Tracker()
@@ -97,17 +97,17 @@ class App:
 
             # read and process frame
             ret, frame3 = self.vid.read()
-            frame3 = imutils.resize(frame3, width=320)
             if not ret:
                 print("End of video stream!")
                 break
+            if args["video"] != "cam":
+                frame3 = imutils.resize(frame3, width=320)
 
             # current frame
             vis = frame3.copy()
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
 
             # copy of current frame (for visualization)
-            #vis = imutils.resize(vis, width=300)
             vis = vis[15:h-15, 15:w-15]
 
             # begin motion estimation
@@ -131,11 +131,11 @@ class App:
                     # current frame
                     print("Frame", self.frame_idx)
 
-                    # warping operation
+                    # warping operation (high load)
                     HMat1to2 = np.linalg.inv(HMat1to2)
                     warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR)
                     # OpenCV 3.x does not have cv2.WARP_INVERSE_MAP
-                    #warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
+                    # warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
                     warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h), cv2.INTER_LINEAR)
 
                     # Gaussian blur operation to ease impact of edges
@@ -167,7 +167,7 @@ class App:
 
                     # ---------- essential operations finished ----------
 
-                    # crude thresholding type 1
+                    # thresholding
                     thold1 = merged.copy()
                     thold1 = cv2.erode(thold1, kernel, iterations=1)
                     _, thold1 = cv2.threshold(thold1, 45, 255, cv2.THRESH_BINARY)
@@ -196,22 +196,6 @@ class App:
                     # cython boost
                     dst = np.asarray(dst23, dtype=int)
                     reg1, reg2, reg3, reg4, reg5, reg6 = count(dst, x1, x2, y1, y2, y3, y4, w, h)
-                    '''
-                    #for tr in dst23:
-                        #(x, y) = tr
-                        if 0 < x < x1 and 0 < y < y1:
-                            reg1 += 1
-                        if x2 < x < w and 0 < y < y1:
-                            reg2 += 1
-                        if 0 < x < x1 and y4 < y < h:
-                            reg3 += 1
-                        if x2 < x < w and y4 < y < h:
-                            reg4 += 1
-                        if 0 < x < x1 and y2 < y < y3:
-                            reg5 += 1
-                        if x2 < x < w and y2 < y < y3:
-                            reg6 += 1
-                    '''
 
                     if reg1 < 10:
                         p1 = cv2.goodFeaturesToTrack(frame3, mask=mask1, **feature_params)
@@ -228,17 +212,17 @@ class App:
 
                 # initialization(only runs at first frame)
                 if self.frame_idx == 0:
-                    p1 = cv2.goodFeaturesToTrack(frame2, mask=mask1, **feature_params)
-                    p2 = cv2.goodFeaturesToTrack(frame2, mask=mask2, **feature_params)
-                    p3 = cv2.goodFeaturesToTrack(frame2, mask=mask3, **feature_params)
-                    p4 = cv2.goodFeaturesToTrack(frame2, mask=mask4, **feature_params)
-                    p5 = cv2.goodFeaturesToTrack(frame2, mask=mask5, **feature_params)
-                    p6 = cv2.goodFeaturesToTrack(frame2, mask=mask6, **feature_params)
+                    p1 = cv2.goodFeaturesToTrack(frame3, mask=mask1, **feature_params)
+                    p2 = cv2.goodFeaturesToTrack(frame3, mask=mask2, **feature_params)
+                    p3 = cv2.goodFeaturesToTrack(frame3, mask=mask3, **feature_params)
+                    p4 = cv2.goodFeaturesToTrack(frame3, mask=mask4, **feature_params)
+                    p5 = cv2.goodFeaturesToTrack(frame3, mask=mask5, **feature_params)
+                    p6 = cv2.goodFeaturesToTrack(frame3, mask=mask6, **feature_params)
 
 
                     for p in [p1, p2, p3, p4, p5, p6]:
                         if p is not None:
-                            for x, y in p.reshape(-1, 2):
+                            for x, y in p.squeeze():
                                 self.tracks.append(deque([(x, y)], maxlen=self.track_len))
 
                     initial_tracks = OpticalFlow(frame2, frame3, self.tracks, lk_params)
@@ -250,7 +234,7 @@ class App:
                 # append found feature points
                 for p in [p1, p2, p3, p4, p5, p6]:
                     if p is not None:
-                        for x, y in p.reshape(-1, 2):
+                        for x, y in p.squeeze():
                             self.tracks.append(deque([(x, y)], maxlen=self.track_len))
 
             # iterate

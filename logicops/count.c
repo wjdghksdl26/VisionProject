@@ -1682,8 +1682,8 @@ static PyObject *__pyx_tuple__2;
  * @cython.boundscheck(False)
  * @cython.wraparound(False)
  * cpdef count(np.ndarray[DTYPE_t, ndim=2] tr, int x1, int x2, int y1, int y2, int y3, int y4, int w, int h):             # <<<<<<<<<<<<<<
- *     cdef int reg1, reg2, reg3, reg4, reg5, reg6, i
- *     cdef int l = tr.shape[0]
+ *     cdef int reg1=0
+ *     cdef int reg2=0
  */
 
 static PyObject *__pyx_pw_8logicops_5count_1count(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
@@ -1730,16 +1730,70 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
   }
   __pyx_pybuffernd_tr.diminfo[0].strides = __pyx_pybuffernd_tr.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_tr.diminfo[0].shape = __pyx_pybuffernd_tr.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_tr.diminfo[1].strides = __pyx_pybuffernd_tr.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_tr.diminfo[1].shape = __pyx_pybuffernd_tr.rcbuffer->pybuffer.shape[1];
 
+  /* "logicops/count.pyx":10
+ * @cython.wraparound(False)
+ * cpdef count(np.ndarray[DTYPE_t, ndim=2] tr, int x1, int x2, int y1, int y2, int y3, int y4, int w, int h):
+ *     cdef int reg1=0             # <<<<<<<<<<<<<<
+ *     cdef int reg2=0
+ *     cdef int reg3=0
+ */
+  __pyx_v_reg1 = 0;
+
   /* "logicops/count.pyx":11
  * cpdef count(np.ndarray[DTYPE_t, ndim=2] tr, int x1, int x2, int y1, int y2, int y3, int y4, int w, int h):
- *     cdef int reg1, reg2, reg3, reg4, reg5, reg6, i
+ *     cdef int reg1=0
+ *     cdef int reg2=0             # <<<<<<<<<<<<<<
+ *     cdef int reg3=0
+ *     cdef int reg4=0
+ */
+  __pyx_v_reg2 = 0;
+
+  /* "logicops/count.pyx":12
+ *     cdef int reg1=0
+ *     cdef int reg2=0
+ *     cdef int reg3=0             # <<<<<<<<<<<<<<
+ *     cdef int reg4=0
+ *     cdef int reg5=0
+ */
+  __pyx_v_reg3 = 0;
+
+  /* "logicops/count.pyx":13
+ *     cdef int reg2=0
+ *     cdef int reg3=0
+ *     cdef int reg4=0             # <<<<<<<<<<<<<<
+ *     cdef int reg5=0
+ *     cdef int reg6=0
+ */
+  __pyx_v_reg4 = 0;
+
+  /* "logicops/count.pyx":14
+ *     cdef int reg3=0
+ *     cdef int reg4=0
+ *     cdef int reg5=0             # <<<<<<<<<<<<<<
+ *     cdef int reg6=0
+ *     cdef int i
+ */
+  __pyx_v_reg5 = 0;
+
+  /* "logicops/count.pyx":15
+ *     cdef int reg4=0
+ *     cdef int reg5=0
+ *     cdef int reg6=0             # <<<<<<<<<<<<<<
+ *     cdef int i
+ *     cdef int l = tr.shape[0]
+ */
+  __pyx_v_reg6 = 0;
+
+  /* "logicops/count.pyx":17
+ *     cdef int reg6=0
+ *     cdef int i
  *     cdef int l = tr.shape[0]             # <<<<<<<<<<<<<<
  *     cdef int x, y
  *     for i in range(l):
  */
   __pyx_v_l = (__pyx_v_tr->dimensions[0]);
 
-  /* "logicops/count.pyx":13
+  /* "logicops/count.pyx":19
  *     cdef int l = tr.shape[0]
  *     cdef int x, y
  *     for i in range(l):             # <<<<<<<<<<<<<<
@@ -1751,39 +1805,39 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "logicops/count.pyx":14
+    /* "logicops/count.pyx":20
  *     cdef int x, y
  *     for i in range(l):
  *         x = tr[i][0]             # <<<<<<<<<<<<<<
  *         y = tr[i][1]
  * 
  */
-    __pyx_t_4 = __Pyx_GetItemInt(((PyObject *)__pyx_v_tr), __pyx_v_i, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 14, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_GetItemInt(((PyObject *)__pyx_v_tr), __pyx_v_i, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 20, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_4, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 14, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_4, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 20, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_5); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 14, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_5); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 20, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __pyx_v_x = __pyx_t_6;
 
-    /* "logicops/count.pyx":15
+    /* "logicops/count.pyx":21
  *     for i in range(l):
  *         x = tr[i][0]
  *         y = tr[i][1]             # <<<<<<<<<<<<<<
  * 
  *         if 0 < x < x1 and 0 < y < y1:
  */
-    __pyx_t_5 = __Pyx_GetItemInt(((PyObject *)__pyx_v_tr), __pyx_v_i, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 15, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_GetItemInt(((PyObject *)__pyx_v_tr), __pyx_v_i, int, 1, __Pyx_PyInt_From_int, 0, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 21, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_4 = __Pyx_GetItemInt(__pyx_t_5, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 15, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_GetItemInt(__pyx_t_5, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 21, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 15, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 21, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_v_y = __pyx_t_6;
 
-    /* "logicops/count.pyx":17
+    /* "logicops/count.pyx":23
  *         y = tr[i][1]
  * 
  *         if 0 < x < x1 and 0 < y < y1:             # <<<<<<<<<<<<<<
@@ -1809,7 +1863,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
     __pyx_L6_bool_binop_done:;
     if (__pyx_t_7) {
 
-      /* "logicops/count.pyx":18
+      /* "logicops/count.pyx":24
  * 
  *         if 0 < x < x1 and 0 < y < y1:
  *             reg1 += 1             # <<<<<<<<<<<<<<
@@ -1818,7 +1872,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
       __pyx_v_reg1 = (__pyx_v_reg1 + 1);
 
-      /* "logicops/count.pyx":17
+      /* "logicops/count.pyx":23
  *         y = tr[i][1]
  * 
  *         if 0 < x < x1 and 0 < y < y1:             # <<<<<<<<<<<<<<
@@ -1827,7 +1881,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
     }
 
-    /* "logicops/count.pyx":19
+    /* "logicops/count.pyx":25
  *         if 0 < x < x1 and 0 < y < y1:
  *             reg1 += 1
  *         if x2 < x < w and 0 < y < y1:             # <<<<<<<<<<<<<<
@@ -1853,7 +1907,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
     __pyx_L9_bool_binop_done:;
     if (__pyx_t_7) {
 
-      /* "logicops/count.pyx":20
+      /* "logicops/count.pyx":26
  *             reg1 += 1
  *         if x2 < x < w and 0 < y < y1:
  *             reg2 += 1             # <<<<<<<<<<<<<<
@@ -1862,7 +1916,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
       __pyx_v_reg2 = (__pyx_v_reg2 + 1);
 
-      /* "logicops/count.pyx":19
+      /* "logicops/count.pyx":25
  *         if 0 < x < x1 and 0 < y < y1:
  *             reg1 += 1
  *         if x2 < x < w and 0 < y < y1:             # <<<<<<<<<<<<<<
@@ -1871,7 +1925,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
     }
 
-    /* "logicops/count.pyx":21
+    /* "logicops/count.pyx":27
  *         if x2 < x < w and 0 < y < y1:
  *             reg2 += 1
  *         if 0 < x < x1 and y4 < y < h:             # <<<<<<<<<<<<<<
@@ -1897,7 +1951,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
     __pyx_L12_bool_binop_done:;
     if (__pyx_t_7) {
 
-      /* "logicops/count.pyx":22
+      /* "logicops/count.pyx":28
  *             reg2 += 1
  *         if 0 < x < x1 and y4 < y < h:
  *             reg3 += 1             # <<<<<<<<<<<<<<
@@ -1906,7 +1960,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
       __pyx_v_reg3 = (__pyx_v_reg3 + 1);
 
-      /* "logicops/count.pyx":21
+      /* "logicops/count.pyx":27
  *         if x2 < x < w and 0 < y < y1:
  *             reg2 += 1
  *         if 0 < x < x1 and y4 < y < h:             # <<<<<<<<<<<<<<
@@ -1915,7 +1969,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
     }
 
-    /* "logicops/count.pyx":23
+    /* "logicops/count.pyx":29
  *         if 0 < x < x1 and y4 < y < h:
  *             reg3 += 1
  *         if x2 < x < w and y4 < y < h:             # <<<<<<<<<<<<<<
@@ -1941,7 +1995,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
     __pyx_L15_bool_binop_done:;
     if (__pyx_t_7) {
 
-      /* "logicops/count.pyx":24
+      /* "logicops/count.pyx":30
  *             reg3 += 1
  *         if x2 < x < w and y4 < y < h:
  *             reg4 += 1             # <<<<<<<<<<<<<<
@@ -1950,7 +2004,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
       __pyx_v_reg4 = (__pyx_v_reg4 + 1);
 
-      /* "logicops/count.pyx":23
+      /* "logicops/count.pyx":29
  *         if 0 < x < x1 and y4 < y < h:
  *             reg3 += 1
  *         if x2 < x < w and y4 < y < h:             # <<<<<<<<<<<<<<
@@ -1959,7 +2013,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
     }
 
-    /* "logicops/count.pyx":25
+    /* "logicops/count.pyx":31
  *         if x2 < x < w and y4 < y < h:
  *             reg4 += 1
  *         if 0 < x < x1 and y2 < y < y3:             # <<<<<<<<<<<<<<
@@ -1985,7 +2039,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
     __pyx_L18_bool_binop_done:;
     if (__pyx_t_7) {
 
-      /* "logicops/count.pyx":26
+      /* "logicops/count.pyx":32
  *             reg4 += 1
  *         if 0 < x < x1 and y2 < y < y3:
  *             reg5 += 1             # <<<<<<<<<<<<<<
@@ -1994,7 +2048,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
       __pyx_v_reg5 = (__pyx_v_reg5 + 1);
 
-      /* "logicops/count.pyx":25
+      /* "logicops/count.pyx":31
  *         if x2 < x < w and y4 < y < h:
  *             reg4 += 1
  *         if 0 < x < x1 and y2 < y < y3:             # <<<<<<<<<<<<<<
@@ -2003,7 +2057,7 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  */
     }
 
-    /* "logicops/count.pyx":27
+    /* "logicops/count.pyx":33
  *         if 0 < x < x1 and y2 < y < y3:
  *             reg5 += 1
  *         if x2 < x < w and y2 < y < y3:             # <<<<<<<<<<<<<<
@@ -2029,16 +2083,16 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
     __pyx_L21_bool_binop_done:;
     if (__pyx_t_7) {
 
-      /* "logicops/count.pyx":28
+      /* "logicops/count.pyx":34
  *             reg5 += 1
  *         if x2 < x < w and y2 < y < y3:
  *             reg6 += 1             # <<<<<<<<<<<<<<
  * 
- *     return reg1, reg2, reg3, reg4, reg5, reg6
+ *     return reg1 < 10, reg2 < 10, reg3 < 10 , reg4 < 10, reg5 < 10, reg6 < 10
  */
       __pyx_v_reg6 = (__pyx_v_reg6 + 1);
 
-      /* "logicops/count.pyx":27
+      /* "logicops/count.pyx":33
  *         if 0 < x < x1 and y2 < y < y3:
  *             reg5 += 1
  *         if x2 < x < w and y2 < y < y3:             # <<<<<<<<<<<<<<
@@ -2048,25 +2102,25 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
     }
   }
 
-  /* "logicops/count.pyx":30
+  /* "logicops/count.pyx":36
  *             reg6 += 1
  * 
- *     return reg1, reg2, reg3, reg4, reg5, reg6             # <<<<<<<<<<<<<<
+ *     return reg1 < 10, reg2 < 10, reg3 < 10 , reg4 < 10, reg5 < 10, reg6 < 10             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_reg1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyBool_FromLong((__pyx_v_reg1 < 10)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_reg2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyBool_FromLong((__pyx_v_reg2 < 10)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_10 = __Pyx_PyInt_From_int(__pyx_v_reg3); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyBool_FromLong((__pyx_v_reg3 < 10)); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_11 = __Pyx_PyInt_From_int(__pyx_v_reg4); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_11 = __Pyx_PyBool_FromLong((__pyx_v_reg4 < 10)); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_12 = __Pyx_PyInt_From_int(__pyx_v_reg5); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyBool_FromLong((__pyx_v_reg5 < 10)); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
-  __pyx_t_13 = __Pyx_PyInt_From_int(__pyx_v_reg6); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_13 = __Pyx_PyBool_FromLong((__pyx_v_reg6 < 10)); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_13);
-  __pyx_t_14 = PyTuple_New(6); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __pyx_t_14 = PyTuple_New(6); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_4);
   PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_4);
@@ -2094,8 +2148,8 @@ static PyObject *__pyx_f_8logicops_5count_count(PyArrayObject *__pyx_v_tr, int _
  * @cython.boundscheck(False)
  * @cython.wraparound(False)
  * cpdef count(np.ndarray[DTYPE_t, ndim=2] tr, int x1, int x2, int y1, int y2, int y3, int y4, int w, int h):             # <<<<<<<<<<<<<<
- *     cdef int reg1, reg2, reg3, reg4, reg5, reg6, i
- *     cdef int l = tr.shape[0]
+ *     cdef int reg1=0
+ *     cdef int reg2=0
  */
 
   /* function exit code */
@@ -3229,7 +3283,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 19, __pyx_L1_error)
   __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 884, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
@@ -3587,8 +3641,8 @@ if (!__Pyx_RefNanny) {
  * @cython.boundscheck(False)
  * @cython.wraparound(False)
  * cpdef count(np.ndarray[DTYPE_t, ndim=2] tr, int x1, int x2, int y1, int y2, int y3, int y4, int w, int h):             # <<<<<<<<<<<<<<
- *     cdef int reg1, reg2, reg3, reg4, reg5, reg6, i
- *     cdef int l = tr.shape[0]
+ *     cdef int reg1=0
+ *     cdef int reg2=0
  */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);

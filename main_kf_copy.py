@@ -14,7 +14,7 @@ from logicops.count import count
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(35, 35), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
+lk_params = dict(winSize=(45, 45), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
@@ -34,7 +34,7 @@ np.set_printoptions(precision=3, suppress=True)
 
 class App:
     def __init__(self, videoPath):
-        self.track_len = 2
+        self.track_len = 5
         self.detect_interval = 2
         self.mask_size = 70
         self.tracks = deque()
@@ -95,7 +95,6 @@ class App:
         # main loop
         while True:
             t_start = time.time()
-            print("Frame", self.frame_idx)
 
             # read and process frame
             ret, frame3 = self.vid.read()
@@ -131,13 +130,14 @@ class App:
                     HMat3to2, stat = cv2.findHomography(dst23, src23, cv2.RANSAC, 1.0)
 
                     # current frame
-                    # print("Frame", self.frame_idx)
+                    print("Frame", self.frame_idx)
 
                     # warping operation (high load)
-                    HMat1to2 = np.linalg.inv(HMat1to2)
-                    warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h))
+                    #HMat1to2 = np.linalg.inv(HMat1to2)
+                    #warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h))
                     # OpenCV 3.x does not have cv2.WARP_INVERSE_MAP
                     # warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
+                    warped1to2 = warped3to2
                     warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h))
 
                     # Gaussian blur operation to ease impact of edges
@@ -252,6 +252,7 @@ class App:
                     initial_src = np.float32([[list(tr[-2])] for tr in initial_tracks])
                     initial_dst = np.float32([[list(tr[-1])] for tr in initial_tracks])
                     HMat3to2, _ = cv2.findHomography(initial_src, initial_dst, 0, 1.0)
+                    warped3to2 = np.zeros_like(frame2)
 
 
 

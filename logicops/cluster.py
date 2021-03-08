@@ -33,7 +33,7 @@ def cluster(pts, thresh=30):
     return ls
 
 
-def clusterWithSize(pts, thresh=30):
+def clusterWithSize(pts, thresh=30.0):
     n = len(pts)
     clusters = dict()
     visited = dict()

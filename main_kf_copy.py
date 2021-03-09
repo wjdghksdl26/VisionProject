@@ -5,7 +5,7 @@ import argparse
 import time
 from collections import deque
 # from imgops.subtract_imgs import SubtractImages
-from imgops.get_optflow import OpticalFlow
+from imgops.get_optflow_test import OpticalFlow
 from imgops.videostream import VideoStream
 from logicops.cluster import clusterWithSize
 from logicops.tracker import Tracker
@@ -14,7 +14,7 @@ from logicops.count import count
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
 feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
-lk_params = dict(winSize=(45, 45), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
+lk_params = dict(winSize=(35, 35), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
@@ -34,7 +34,7 @@ np.set_printoptions(precision=3, suppress=True)
 
 class App:
     def __init__(self, videoPath):
-        self.track_len = 5
+        self.track_len = 2
         self.detect_interval = 2
         self.mask_size = 70
         self.tracks = deque()
@@ -95,6 +95,7 @@ class App:
         # main loop
         while True:
             t_start = time.time()
+            print("Frame", self.frame_idx)
 
             # read and process frame
             ret, frame3 = self.vid.read()
@@ -116,12 +117,13 @@ class App:
                 img1, img2, img3 = frame1, frame2, frame3
 
                 # optical flow from img2 to img3
-                self.tracks = OpticalFlow(img2, img3, self.tracks, lk_params)
+                # self.tracks = OpticalFlow(img2, img3, self.tracks, lk_params)
+                src23, dst23 = OpticalFlow(img2, img3, dst23, lk_params)
 
                 # points in img3
-                dst23 = np.float32([list(tr[-1]) for tr in self.tracks])
+                #dst23 = np.float32([[list(tr[-1])] for tr in self.tracks])
                 # points in img2
-                src23 = np.float32([list(tr[-2]) for tr in self.tracks])
+                #src23 = np.float32([[list(tr[-2])] for tr in self.tracks])
 
                 if len(dst23) >= 12:
                     # Homography Mat. that warps img1 to fit img2
@@ -130,14 +132,13 @@ class App:
                     HMat3to2, stat = cv2.findHomography(dst23, src23, cv2.RANSAC, 1.0)
 
                     # current frame
-                    print("Frame", self.frame_idx)
+                    # print("Frame", self.frame_idx)
 
                     # warping operation (high load)
-                    #HMat1to2 = np.linalg.inv(HMat1to2)
-                    #warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h))
+                    HMat1to2 = np.linalg.inv(HMat1to2)
+                    warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h))
                     # OpenCV 3.x does not have cv2.WARP_INVERSE_MAP
                     # warped1to2 = cv2.warpPerspective(img1, HMat1to2, (w, h), cv2.INTER_LINEAR, cv2.WARP_INVERSE_MAP)
-                    warped1to2 = warped3to2
                     warped3to2 = cv2.warpPerspective(img3, HMat3to2, (w, h))
 
                     # Gaussian blur operation to ease impact of edges
@@ -172,12 +173,12 @@ class App:
                     # thresholding
                     thold1 = merged.copy()
                     thold1 = cv2.erode(thold1, kernel, iterations=1)
-                    _, thold1 = cv2.threshold(thold1, 45, 255, cv2.THRESH_BINARY)
+                    _, thold1 = cv2.threshold(thold1, 35, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
-                    for tr in self.tracks:
-                            cv2.circle(vis, tuple(np.int32(tr[-1])), 2, (0, 0, 255), -1)
+                    for tr in dst23:
+                            cv2.circle(vis, tuple(np.int32(tr[0])), 2, (0, 0, 255), -1)
                     #cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                 # in case of motion compensation failure
@@ -199,7 +200,7 @@ class App:
                     dst = np.asarray(dst23, dtype=int).reshape(-1, 2)
                     reg1, reg2, reg3, reg4, reg5, reg6 = count(dst, x1, x2, y1, y2, y3, y4, w, h)
 
-                    plist = []
+                    plist = [dst23]
                     if reg1:
                         p1 = cv2.goodFeaturesToTrack(frame3, mask=mask1, **feature_params)
                         plist.append(p1)
@@ -220,11 +221,8 @@ class App:
                         plist.append(p6)
 
                     # append found feature points
-                    for p in plist:
-                        if p is not None:
-                            # print(p.squeeze())
-                            for x, y in p.reshape(-1, 2):
-                                self.tracks.append(deque([(x, y)], maxlen=self.track_len))
+                    plist = [i for i in plist if i is not None]
+                    dst23 = np.concatenate(plist, axis=0)
 
                 # initialization(only runs at first frame)
                 if self.frame_idx == 0:
@@ -243,16 +241,14 @@ class App:
                     plist.append(p6)
 
 
-                    for p in plist:
-                        if p is not None:
-                            for x, y in p.reshape(-1, 2):
-                                self.tracks.append(deque([(x, y)], maxlen=self.track_len))
+                    #for p in plist:
+                    #    if p is not None:
+                    #        dst23 = np.vstack((dst23, p))
+                    plist = [i for i in plist if i is not None]
+                    dst23 = np.concatenate(plist, axis=0)
 
-                    initial_tracks = OpticalFlow(frame2, frame3, self.tracks, lk_params)
-                    initial_src = np.float32([[list(tr[-2])] for tr in initial_tracks])
-                    initial_dst = np.float32([[list(tr[-1])] for tr in initial_tracks])
-                    HMat3to2, _ = cv2.findHomography(initial_src, initial_dst, 0, 1.0)
-                    warped3to2 = np.zeros_like(frame2)
+                    src23, dst23 = OpticalFlow(frame2, frame3, dst23, lk_params)
+                    HMat3to2, _ = cv2.findHomography(src23, dst23, 0, 1.0)
 
 
 
@@ -271,7 +267,7 @@ class App:
                 # pick components with threshold
                 if 0 < len(centroids) < 25:
                     centers = []
-                    # 이부분을 모두 numpy array로 바꾸고 cythonize하자.
+                    # ----- cythonize (1) -----
                     ls = []
                     for c, s in zip(centroids, stats):
                         if 25 < s[4] < 5000:
@@ -283,7 +279,8 @@ class App:
                             #cv2.circle(thold1, c, 1, (0, 0, 255), 2)
 
                     # clustering
-                    centers, sizels = clusterWithSize(ls, thresh=150)
+                    # ----- cythonize (2) -----
+                    centers, sizels = clusterWithSize(ls, thresh=150.0)
                     for c in centers:
                         cv2.circle(thold1, (int(c[0]), int(c[1])), 1, (0, 0, 255), 2)
 

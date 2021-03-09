@@ -242,7 +242,6 @@ class App:
                     p6 = cv2.goodFeaturesToTrack(frame3, mask=mask6, **feature_params)
                     plist.append(p6)
 
-
                     for p in plist:
                         if p is not None:
                             for x, y in p.reshape(-1, 2):

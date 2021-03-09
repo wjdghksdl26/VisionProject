@@ -6,6 +6,7 @@ from collections import deque
 def OpticalFlow(img0, img1, tracks, params):
     p0 = np.float32([tr[-1] for tr in tracks]).reshape(-1, 1, 2)
     p1, st, err = cv2.calcOpticalFlowPyrLK(img0, img1, p0, None, **params)
+    #print(err)
     #err = [i[0] for i in err]
 
     if p1 is not None:
@@ -13,7 +14,7 @@ def OpticalFlow(img0, img1, tracks, params):
         #p0r, st, err_ = cv2.calcOpticalFlowPyrLK(img1, img0, p1, None, **params)
         #d = abs(p0 - p0r).reshape(-1, 2).max(-1)
         #print(d)
-        #print(err)
+        # print(p1.shape)
         #good = d < 0.7
         #print(good)
         good_ = ((err > 0) & (err < 25))
@@ -27,8 +28,8 @@ def OpticalFlow(img0, img1, tracks, params):
             if 70.0 < x < 250.0 or x < 3.0 or x > 317.0:
                 continue
 
-            if 70.0 < y < 85.0 or 155.0 < y < 170.0 or y < 3.0 or y > 237.0:
-                continue
+            # if 70.0 < y < 85.0 or 155.0 < y < 170.0 or y < 3.0 or y > 237.0:
+                # continue
 
             tr.append((x, y))
 

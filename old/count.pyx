@@ -3,6 +3,7 @@ cimport numpy as np
 cimport cython
 
 ctypedef np.int_t DTYPE_t
+ctypedef np.float_t FTYPE_t
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -34,3 +35,26 @@ cpdef count(np.ndarray[DTYPE_t, ndim=2] tr, int x1, int x2, int y1, int y2, int 
             reg6 += 1
 
     return reg1 < 10, reg2 < 10, reg3 < 10 , reg4 < 10, reg5 < 10, reg6 < 10
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef wavg(np.ndarray[FTYPE_t, ndim=2] cluster):
+    cdef float rx = 0.0
+    cdef float ry = 0.0
+    cdef float rw = 0.0
+    cdef float rh = 0.0
+    cdef int i
+    cdef int npts
+    npts = cluster.shape[0]
+
+    for i in range(npts):
+        
+        rx += cluster[i][0] * cluster[i][2]
+        ry += cluster[i][1] * cluster[i][3]
+        rw += cluster[i][2]
+        rh += cluster[i][3]
+
+    x = rx / rw
+    y = ry / rh
+
+    return (x, y), (rw, rh)

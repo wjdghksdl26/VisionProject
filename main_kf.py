@@ -22,7 +22,7 @@ args = vars(ap.parse_args())
 
 if args["video"] == "cam" or args["video"] == "webcam":
     #video = VideoStream(src=0).start()
-    video = cv2.VideoCapture(0)
+    video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     video.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     video.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
     video.set(cv2.CAP_PROP_FPS, 60)

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from collections import deque
-from imgops.optflow import count
+from imgops.optflow_realsense import count
 
 
 def OpticalFlow(img0, img1, p0, params):

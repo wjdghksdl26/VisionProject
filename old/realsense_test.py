@@ -1,4 +1,5 @@
 import cv2
+import pyrealsense2 as rs
 import imutils
 import numpy as np
 import argparse
@@ -24,6 +25,13 @@ if args["video"] == "cam" or args["video"] == "webcam":
     video.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     video.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
     video.set(cv2.CAP_PROP_FPS, 60)
+elif args["video"] == "realsense":
+    video = None
+    pipeline = rs.pipeline()
+    config = rs.config()
+    config.enable_stream(rs.stream.color, 424, 240, rs.format.bgr8, 30)
+    config.enable_stream(rs.stream.depth, 424, 240, rs.format.z16, 30)
+    pipeline.start(config)
 else:
     video = cv2.VideoCapture(args["video"])
 
@@ -32,7 +40,8 @@ class App:
     def __init__(self, videoPath):
         self.detect_interval = 2
         self.mask_size = 70
-        self.vid = videoPath
+        if args["video"] != "realsense":
+            self.vid = videoPath
         self.initiate_kalmanFilter = 12
 
         self.termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
@@ -48,15 +57,26 @@ class App:
 
     def run(self):
         # images for initialization
-        ret, frame1 = self.vid.read()
-        frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
-        if args["video"] != "cam":
-            frame1 = imutils.resize(frame1, width=320)
+        if args["video"] != "realsense":
+            ret, frame1 = self.vid.read()
+            frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+            if args["video"] != "cam":
+                frame1 = imutils.resize(frame1, width=320)
 
-        ret, frame2 = self.vid.read()
-        frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
-        if args["video"] != "cam":
-            frame2 = imutils.resize(frame2, width=320)
+            ret, frame2 = self.vid.read()
+            frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+            if args["video"] != "cam":
+                frame2 = imutils.resize(frame2, width=320)
+        
+        else:
+            frame = pipeline.wait_for_frames()
+            frame1 = frame.get_color_frame()
+            frame1 = np.asanyarray(frame1.get_data())
+            frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+            frame = pipeline.wait_for_frames()
+            frame2 = frame.get_color_frame()
+            frame2 = np.asanyarray(frame2.get_data())
+            frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
         # video size
         h, w = frame1.shape
@@ -93,16 +113,24 @@ class App:
             print("Frame", self.frame_idx)
 
             # read and process frame
-            ret, frame3 = self.vid.read()
-            if not ret:
-                print("End of video stream!")
-                break
-            if args["video"] != "cam":
-                frame3 = imutils.resize(frame3, width=320)
+            if args["video"] != "realsense":
+                ret, frame3 = self.vid.read()
+                if not ret:
+                    print("End of video stream!")
+                    break
+                if args["video"] != "cam":
+                    frame3 = imutils.resize(frame3, width=320)
 
-            # current frame
-            vis = frame3.copy()
-            frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
+                # current frame
+                vis = frame3.copy()
+                frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
+
+            else:
+                frame = pipeline.wait_for_frames()
+                frame3 = frame.get_color_frame()
+                depth3 = frame.get_depth_frame()
+                vis = np.asanyarray(frame3.get_data())
+                frame3 = cv2.cvtColor(vis, cv2.COLOR_BGR2GRAY)
 
             # copy of current frame (for visualization)
             vis = vis[15:h-15, 15:w-15]
@@ -271,12 +299,29 @@ class App:
                             objs[ID][-1] = new
                             print(list(objs[ID]))
 
+                        xlist = list(range(int(new[0]) - 20, int(new[0]) + 21, 5))
+                        ylist = list(range(int(new[1]) - 20, int(new[1]) + 21, 5))
+                        dist = 100.0
+                        for i in xlist:
+                            if i < 0 or i > 480:
+                                continue
+                            for j in ylist:
+                                if j < 0 or j > 240:
+                                    continue
+                                ndist = round(depth3.get_distance(i, j), 2)
+                                print(ndist)
+                                if 0.2 < ndist < dist:
+                                    dist = ndist
+
+
                         cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
-                        cv2.putText(thold1, text, (int(new[0]) - 10, int(new[1]) - 10),
-                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
+                        cv2.putText(vis, "dist "+str(dist)+" m", (int(new[0]) - 10, int(new[1]) + 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        #cv2.putText(thold1, text, (int(new[0]) - 10, int(new[1]) - 10),
+                        #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        #cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
 
                 # draw
                 final = np.hstack((vis, merged, thold1))

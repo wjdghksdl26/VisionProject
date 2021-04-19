@@ -270,26 +270,27 @@ class App:
                         cent = objs[ID]
                         new = cent[-1]
 
-                        # get distance to object
-                        xlist = list(range(int(new[0]) - 20, int(new[0]) + 21, 5))
-                        ylist = list(range(int(new[1]) - 20, int(new[1]) + 21, 5))
-                        dist = 100.0
-                        for i in xlist:
-                            if i < 0 or i > 480:
-                                continue
-                            for j in ylist:
-                                if j < 0 or j > 240:
-                                    continue
-                                ndist = round(depth3.get_distance(i, j), 2)
-                                print(ndist)
-                                if 0.2 < ndist < dist:
-                                    dist = ndist
-
                         cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
-                        cv2.putText(vis, "dist "+str(dist)+" m", (int(new[0]) - 10, int(new[1]) + 20),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                        # get distance to object
+                        if self.source == "realsense":
+                            xlist = list(range(int(new[0]) - 20, int(new[0]) + 21, 5))
+                            ylist = list(range(int(new[1]) - 20, int(new[1]) + 21, 5))
+                            dist = 100.0
+                            for i in xlist:
+                                if i < 0 or i > 480:
+                                    continue
+                                for j in ylist:
+                                    if j < 0 or j > 240:
+                                        continue
+                                    ndist = round(depth3.get_distance(i, j), 2)
+                                    print(ndist)
+                                    if 0.2 < ndist < dist:
+                                        dist = ndist
+                            cv2.putText(vis, "dist "+str(dist)+" m", (int(new[0]) - 10, int(new[1]) + 20),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                 
                 # draw
                 final = np.hstack((vis, merged, thold1))

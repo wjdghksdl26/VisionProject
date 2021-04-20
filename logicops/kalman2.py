@@ -38,7 +38,7 @@ class Kfilter():
                                                           filtered_state_covariance = self.P_now,
                                                           observation = lastpt)
         
-        return (int(self.x_now[0]), int(self.x_now[2]))
+        return (self.x_now[0], self.x_now[2])
 
 #a=Kfilter()
 #measurements = np.asarray([(164, 171), (166, 168), (166, 165), (169, 163), (171, 159), (176, 157), (170, 153), (173, 151), (176, 148), (168, 143)])

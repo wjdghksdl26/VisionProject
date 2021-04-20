@@ -5,7 +5,7 @@ import numpy as np
 
 
 class Tracker():
-    def __init__(self, dist_thresh=100, maxDisappeared=2, track_length=10, track_start_length=3):
+    def __init__(self, dist_thresh=100, maxDisappeared=2, track_length=5, track_start_length=3):
         self.nextID = 0
         self.tempID = 100
         self.objects = OrderedDict()
@@ -104,3 +104,4 @@ class Tracker():
                         self.nextID = truepts
 
         return self.objects
+        

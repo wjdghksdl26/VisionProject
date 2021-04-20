@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial import distance as dist
 
 
-def cluster(pts, thresh=30):
+def cluster(pts, thresh=30.0):
     m = n = len(pts)
     cluster = dict()
     visited = dict()
@@ -33,7 +33,7 @@ def cluster(pts, thresh=30):
     return ls
 
 
-def clusterWithSize(pts, thresh=30):
+def clusterWithSize(pts, thresh=30.0):
     n = len(pts)
     clusters = dict()
     visited = dict()
@@ -61,6 +61,13 @@ def clusterWithSize(pts, thresh=30):
     
     centerls = []
     sizels = []
+    
+    cl = []
+    for idx, i in enumerate(clusters):
+        cl.append([np.asarray([j[0][0], j[0][1], j[1], j[2]]) for j in clusters[i]])
+        cl[idx] = np.vstack(cl[idx])
+        
+    # cythonize
     for cluster in clusters:
         rx = 0.0
         ry = 0.0
@@ -77,7 +84,9 @@ def clusterWithSize(pts, thresh=30):
 
         x = rx / rw
         y = ry / rh
-        centerls.append((int(x), int(y)))
-        sizels.append((int(rw), int(rh)))
+        #centerls.append((int(x), int(y)))
+        #sizels.append((int(rw), int(rh)))
+        centerls.append((x, y))
+        sizels.append((rw, rh))
 
     return centerls, sizels

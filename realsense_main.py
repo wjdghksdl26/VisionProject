@@ -13,15 +13,17 @@ from logicops.tracker import Tracker
 from logicops.kalman2 import Kfilter
 from logicops.count import count
 
+import rospy
+from geometry_msgs.msg import Point
+
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", type=str)
 args = vars(ap.parse_args())
 source = args["video"]
 
 
-
 class App:
-    def __init__(self, source):
+    def __init__(self, source="realsense"):
         self.source = source
         if source == "realsense":
             self.pipeline = rs.pipeline()
@@ -45,11 +47,19 @@ class App:
         self.feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=True)
         self.lk_params = dict(winSize=(35, 35), maxLevel=2, criteria=self.termination, minEigThreshold=1e-4)
         self.tracker = Tracker()
+        
+        print("Starting ROS Node for Publishing Object Coordinates...")
+        self.pub = rospy.Publisher('/moving_obj_coords', Point, queue_size = 1)
+        rospy.init_node('detector')
 
     def run(self):
         if self.source == "realsense":
-            for i in range(10):
+            for i in range(5):
+                print("Initializing RealSense Camera...")
                 temp = self.pipeline.wait_for_frames()
+                time.sleep(0.5)
+                
+            print("RealSense Initialization Complete!!")
                 
             frame = self.pipeline.wait_for_frames()
             frame1 = frame.get_color_frame()
@@ -57,6 +67,7 @@ class App:
             frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
             frame = self.pipeline.wait_for_frames()
             frame2 = frame.get_color_frame()
+            depth2 = frame.get_depth_frame()
             frame2 = np.asanyarray(frame2.get_data())
             frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
         else:
@@ -159,8 +170,8 @@ class App:
 
                     # thresholding
                     thold1 = merged.copy()
-                    thold1 = cv2.erode(thold1, self.kernel, iterations=1)
-                    _, thold1 = cv2.threshold(thold1, 35, 255, cv2.THRESH_BINARY)
+                    #thold1 = cv2.erode(thold1, self.kernel, iterations=1)
+                    _, thold1 = cv2.threshold(thold1, 40, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.dilate(thold1, self.kernel, iterations=2)
 
                     # draw flow
@@ -227,6 +238,7 @@ class App:
                     plist.append(p6)
 
                     plist = [i for i in plist if i is not None]
+                    print(plist)
                     dst23 = np.concatenate(plist, axis=0)
 
                     src23, dst23 = OpticalFlow(frame2, frame3, dst23, self.lk_params)
@@ -289,15 +301,24 @@ class App:
                                 for j in ylist:
                                     if j < 0 or j > 240:
                                         continue
-                                    ndist = round(depth3.get_distance(i, j), 2)
+                                    ndist = round(depth2.get_distance(i, j), 2)
                                     if 0.2 < ndist < dist:
                                         dist = ndist
                             cv2.putText(vis, "dist "+str(dist)+" m", (int(new[0]) - 10, int(new[1]) + 20),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                            
+                            # publish via ROS
+                            point = Point()
+                            point.x = new[0]
+                            point.y = new[1]
+                            point.z = dist
+                            self.pub.publish(point)
                 
+                depth2 = depth3
                 # draw
                 final = np.hstack((vis, merged, thold1))
                 cv2.imshow("frame", final)
+                
 
             # waitkey
             k = cv2.waitKey(1) & 0xFF
@@ -318,6 +339,8 @@ class App:
             vid.release()
         print("Average FPS :", round(totalFPS / frame_idx, 1))
 
-a = App(source)
-a.run()
-cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    a = App(source)
+    a.run()
+    cv2.destroyAllWindows()

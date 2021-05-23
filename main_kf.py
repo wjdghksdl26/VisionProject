@@ -40,8 +40,7 @@ class App:
         self.tracks = deque()
         self.vid = videoPath
         self.frame_idx = 0
-        self.initiate_kalmanFilter = 12
-
+        self.initiate_kalmanFilter = 50
     def run(self):
         # images for initialization
         ret, frame1 = self.vid.read()
@@ -302,7 +301,10 @@ class App:
                             kftext = "Kalman Filter Activated!!\n"
                             print(kftext)
                             kf = Kfilter()
-                            kf.trainKfilter(cent)
+                            print(cent)
+                            filtered_traj = kf.trainKfilter(cent)
+                            for i in range(self.initiate_kalmanFilter):
+                                objs[ID][i] = filtered_traj[i]
 
                         if len(objs[ID]) > self.initiate_kalmanFilter:
                             kftext = "Kalman Filter Updating for object ID {}\n".format(ID)
@@ -320,15 +322,20 @@ class App:
                         #    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         #cv2.circle(vis, (int(centx[-1]), int(centy[-1])), 4, (0, 255, 0), -1)
                         # visualize tracking results
-                        cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
-                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
-                        cv2.putText(thold1, text, (int(new[0]) - 10, int(new[1]) - 10),
-                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.putText(vis, text, (int(new[0]) + 20, int(new[1]) + 20),
+                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        for tr in objs.values():
+                            for pt in tr:
+                                cv2.circle(vis, (int(pt[0]), int(pt[1])), 4, (0, 255, 0), -1)
+                            #for p in range(0, len(tr), 20):
+                            #    cv2.circle(vis, (int(tr[p][0]), int(tr[p][1])), 4, (0, 255, 0), -1)
+                        cv2.putText(thold1, text, (int(new[0]) + 20, int(new[1]) + 20),
+                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                         cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
 
                 # draw
-                final = np.hstack((vis, merged, thold1))
+                # final = np.hstack((vis, merged, thold1))
+                final = np.hstack((vis, thold1))
                 cv2.imshow("frame", final)
 
             # waitkey

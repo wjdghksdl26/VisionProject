@@ -14,6 +14,7 @@ class Kfilter():
         self.kf3 = None
         self.x_now = None
         self.P_now = None
+        self.filtered_traj = []
 
     def trainKfilter(self, pts):
         pts = np.asarray(pts)
@@ -25,12 +26,16 @@ class Kfilter():
         self.kf3 = KalmanFilter(transition_matrices = self.transition_mat,
                                 observation_matrices = self.observation_mat,
                                 initial_state_mean = self.initial_state_mean,
-                                observation_covariance = 20 * kf1.observation_covariance,
+                                observation_covariance = 5 * kf1.observation_covariance,
                                 em_vars=['transition_covariance', 'initial_state_covariance'])
         self.kf3 = self.kf3.em(pts, n_iter=5)
         (filtered_state_means, filtered_state_covariances) = self.kf3.filter(pts)
+        for i in range(filtered_state_means.shape[0]):
+            self.filtered_traj.append((filtered_state_means[i][0], filtered_state_means[i][2]))
         self.x_now = filtered_state_means[-1, :]
         self.P_now = filtered_state_covariances[-1, :]
+
+        return self.filtered_traj
 
     def updateKfilter(self, lastpt):
         lastpt = np.asarray(lastpt)

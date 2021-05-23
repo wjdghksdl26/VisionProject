@@ -33,7 +33,7 @@ class App:
         self.detect_interval = 2
         self.mask_size = 70
         self.vid = videoPath
-        self.initiate_kalmanFilter = 12
+        self.initiate_kalmanFilter = 3
 
         self.termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
         self.feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=True)

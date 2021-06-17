@@ -13,33 +13,37 @@ class Detector:
     def __init__(self):
         self.pipeline = rs.pipeline()
         self.config = rs.config()
-        self.config.enable_stream(rs.stream.color, 424, 240, rs.format.bgr8, 60)
+        #self.config.enable_stream(rs.stream.color, 424, 240, rs.format.bgr8, 60)
         self.config.enable_stream(rs.stream.depth, 424, 240, rs.format.z16, 60)
-        self.align = rs.align(rs.stream.color)
+        self.config.enable_stream(rs.stream.infrared, 1, 424, 240, rs.format.y8, 60)
+        #self.align = rs.align(rs.stream.color)
         self.tracker = Tracker()
 
     def initialize(self):
         self.pipeline.start(self.config)
         data = self.pipeline.wait_for_frames()
-        color = data.get_color_frame()
-        frame = np.asanyarray(color.get_data())
-        h, w, _ = frame.shape
+        #color = data.get_color_frame()
+        depth = data.get_depth_frame()
+        depth = np.asanyarray(depth.get_data())
+        h, w = depth.shape
 
         return h, w
 
     def run(self):
         h, w = self.initialize()
 
-        xlist = list(range(60, w-60, 15))
+        xlist = list(range(30, w-30, 15))
         ylist = list(range(30, h-30, 15))
         depthMat_zero = np.zeros((len(ylist), len(xlist)))
 
         while True:
             ts = time.time()
             data = self.pipeline.wait_for_frames()
-            data = self.align.process(data)
-            color = data.get_color_frame()
-            frame = np.asanyarray(color.get_data())
+            ir_frame = data.first(rs.stream.infrared)
+            ir_frame = np.asanyarray(ir_frame.get_data())
+            #data = self.align.process(data)
+            #color = data.get_color_frame()
+            #frame = np.asanyarray(color.get_data())
             depth = data.get_depth_frame()
 
             depthMat = depthMat_zero
@@ -52,9 +56,7 @@ class Detector:
                         #cv2.circle(frame, (x, y), 4, (0, 0, 255), -1)
 
             depthMat = depthMat.astype('uint8')
-            depthMat = imutils.resize(depthMat, height = 60)
-            _, depthMatThr = cv2.threshold(depthMat, 10, 255, cv2.THRESH_BINARY)
-            depthMat = cv2.cvtColor(depthMat, cv2.COLOR_GRAY2BGR)
+            _, depthMatThr = cv2.threshold(imutils.resize(depthMat, height = 60), 10, 255, cv2.THRESH_BINARY)
             
             nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(depthMatThr, None, None, None, 8, cv2.CV_32S)
             stats = stats[1:]
@@ -74,7 +76,11 @@ class Detector:
 
             objs = self.tracker.update(centers)
 
+            ir_frame = ir_frame[30:h-30, 30:w-30]
+            ir_frame = imutils.resize(ir_frame, height=300)
             depthMat = imutils.resize(depthMat, height=300)
+            ir_frame = cv2.cvtColor(ir_frame, cv2.COLOR_GRAY2BGR)
+            depthMat = cv2.cvtColor(depthMat, cv2.COLOR_GRAY2BGR)
             
             for ID in self.tracker.objects_TF:
                 if self.tracker.objects_TF[ID] == True:
@@ -82,12 +88,16 @@ class Detector:
                     cent = objs[ID]
                     new = cent[-1]
 
+                    cv2.putText(ir_frame, text, (int(new[0])*5-10, int(new[1])*5-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    cv2.circle(ir_frame, (int(new[0])*5, int(new[1])*5), 4, (0, 255, 0), -1)
                     cv2.putText(depthMat, text, (int(new[0])*5-10, int(new[1])*5-10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                     cv2.circle(depthMat, (int(new[0])*5, int(new[1])*5), 4, (0, 255, 0), -1)
 
 
-            cv2.imshow("frame", depthMat)
+            img = np.hstack((ir_frame, depthMat))
+            cv2.imshow("frame", img)
             k = cv2.waitKey(1) & 0xFF
 
             if k == 27:

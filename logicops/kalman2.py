@@ -25,7 +25,7 @@ class Kfilter():
         self.kf3 = KalmanFilter(transition_matrices = self.transition_mat,
                                 observation_matrices = self.observation_mat,
                                 initial_state_mean = self.initial_state_mean,
-                                observation_covariance = 20 * kf1.observation_covariance,
+                                observation_covariance = 100 * kf1.observation_covariance,
                                 em_vars=['transition_covariance', 'initial_state_covariance'])
         self.kf3 = self.kf3.em(pts, n_iter=5)
         (filtered_state_means, filtered_state_covariances) = self.kf3.filter(pts)

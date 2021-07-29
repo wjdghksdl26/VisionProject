@@ -106,8 +106,9 @@ class App:
                 frame3 = imutils.resize(frame3, width=320)
 
             # current frame
-            vis = frame2.copy()
-            vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
+            vis = frame3.copy()
+            vis2 = frame3.copy()
+            #vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
 
             # copy of current frame (for visualization)
@@ -334,12 +335,13 @@ class App:
 
                 # draw
                 #final = np.hstack((vis, merged, thold1))
-                
-                final = np.hstack((vis, thold1))
+                warped = cv2.warpPerspective(vis2, HMat3to2, (w, h))
+                warped = imutils.resize(warped, height=538)
+                final = np.hstack((warped, vis, thold1))
                 cv2.imshow("frame", final)
 
             # waitkey
-            k = cv2.waitKey(0) & 0xFF
+            k = cv2.waitKey(1) & 0xFF
 
             # interrupt
             if k == 27:

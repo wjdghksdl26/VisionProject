@@ -33,7 +33,7 @@ class App:
         self.detect_interval = 2
         self.mask_size = 70
         self.vid = videoPath
-        self.initiate_kalmanFilter = 12
+        self.initiate_kalmanFilter = 10
 
         self.termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
         self.feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=True)
@@ -247,7 +247,7 @@ class App:
 
                 # tracking
                 objs = self.tracker.update(centers)
-                print(objs)
+                print("Before KF update", objs)
                 
                 merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
 
@@ -272,10 +272,10 @@ class App:
                             print(list(objs[ID]))
 
                         cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
-                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
                         cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
                         cv2.putText(thold1, text, (int(new[0]) - 10, int(new[1]) - 10),
-                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
                         cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
 
                 # draw

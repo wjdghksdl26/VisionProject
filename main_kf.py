@@ -34,7 +34,7 @@ np.set_printoptions(precision=3, suppress=True)
 
 class App:
     def __init__(self, videoPath):
-        self.track_len = 60
+        self.track_len = 10
         self.detect_interval = 2
         self.mask_size = 50
         self.tracks = deque()
@@ -106,8 +106,8 @@ class App:
                 frame3 = imutils.resize(frame3, width=320)
 
             # current frame
-            vis = frame2.copy()
-            vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
+            vis = frame3.copy()
+            #vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
             frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
 
             # copy of current frame (for visualization)
@@ -335,11 +335,11 @@ class App:
                 # draw
                 #final = np.hstack((vis, merged, thold1))
                 
-                final = np.hstack((vis, thold1))
-                cv2.imshow("frame", final)
+                #final = np.hstack((vis, thold1))
+                cv2.imshow("frame", vis)
 
             # waitkey
-            k = cv2.waitKey(0) & 0xFF
+            k = cv2.waitKey(1) & 0xFF
 
             # interrupt
             if k == 27:

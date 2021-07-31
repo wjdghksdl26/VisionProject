@@ -324,11 +324,11 @@ class App:
                         #cv2.circle(vis, (int(centx[-1]), int(centy[-1])), 4, (0, 255, 0), -1)
                         # visualize tracking results
                         #cv2.circle(vis, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
-                        for point in list(objs[ID]):
-                            cv2.circle(vis, (int(point[0]), int(point[1])), 4, (0, 0, 255), -1)
-                            cv2.circle(thold1, (int(point[0]), int(point[1])), 4, (0, 0, 255), -1)
-                        cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
-                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        #for point in list(objs[ID]):
+                        #    cv2.circle(vis, (int(point[0]), int(point[1])), 4, (0, 0, 255), -1)
+                        #   cv2.circle(thold1, (int(point[0]), int(point[1])), 4, (0, 0, 255), -1)
+                        #cv2.putText(vis, text, (int(new[0]) - 10, int(new[1]) - 10),
+                        #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         cv2.putText(thold1, text, (int(new[0]) - 10, int(new[1]) - 10),
                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
                         #cv2.circle(thold1, (int(new[0]), int(new[1])), 4, (0, 255, 0), -1)
@@ -337,7 +337,8 @@ class App:
                 #final = np.hstack((vis, merged, thold1))
                 warped = cv2.warpPerspective(vis2, HMat3to2, (w, h))
                 warped = imutils.resize(warped, height=538)
-                final = np.hstack((warped, vis, thold1))
+                
+                final = np.hstack((vis, warped, merged))
                 cv2.imshow("frame", final)
 
             # waitkey

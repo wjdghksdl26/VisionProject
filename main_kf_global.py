@@ -13,7 +13,7 @@ from logicops.kalman2 import Kfilter
 from logicops.count import count
 
 termination = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03)
-feature_params = dict(maxCorners=10, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
+feature_params = dict(maxCorners=30, qualityLevel=0.01, minDistance=3, blockSize=7, useHarrisDetector=False)
 lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=termination, minEigThreshold=1e-4)
 
 ap = argparse.ArgumentParser()
@@ -65,8 +65,9 @@ class App:
         y3 = int(h/2 + self.mask_size/2)
         y4 = h - self.mask_size
         # top left
-        mask1 = np.zeros_like(frame1)
-        mask1[0:y1, 0:x1] = 1
+        # mask1 = np.zeros_like(frame1)
+        # mask1[0:y1, 0:x1] = 1
+        mask1 = np.ones_like(frame1)
         # top right
         mask2 = np.zeros_like(frame1)
         mask2[0:y1, x2:w] = 1
@@ -205,6 +206,7 @@ class App:
                     if reg1:
                         p1 = cv2.goodFeaturesToTrack(frame3, mask=mask1, **feature_params)
                         plist.append(p1)
+                    '''
                     if reg2:
                         p2 = cv2.goodFeaturesToTrack(frame3, mask=mask2, **feature_params)
                         plist.append(p2)
@@ -220,6 +222,7 @@ class App:
                     if reg6:
                         p6 = cv2.goodFeaturesToTrack(frame3, mask=mask6, **feature_params)
                         plist.append(p6)
+                    '''
 
                     # append found feature points
                     for p in plist:
@@ -233,16 +236,16 @@ class App:
                     plist = []
                     p1 = cv2.goodFeaturesToTrack(frame3, mask=mask1, **feature_params)
                     plist.append(p1)
-                    p2 = cv2.goodFeaturesToTrack(frame3, mask=mask2, **feature_params)
-                    plist.append(p2)
-                    p3 = cv2.goodFeaturesToTrack(frame3, mask=mask3, **feature_params)
-                    plist.append(p3)
-                    p4 = cv2.goodFeaturesToTrack(frame3, mask=mask4, **feature_params)
-                    plist.append(p4)
-                    p5 = cv2.goodFeaturesToTrack(frame3, mask=mask5, **feature_params)
-                    plist.append(p5)
-                    p6 = cv2.goodFeaturesToTrack(frame3, mask=mask6, **feature_params)
-                    plist.append(p6)
+                    #p2 = cv2.goodFeaturesToTrack(frame3, mask=mask2, **feature_params)
+                    #plist.append(p2)
+                    #p3 = cv2.goodFeaturesToTrack(frame3, mask=mask3, **feature_params)
+                    #plist.append(p3)
+                    #p4 = cv2.goodFeaturesToTrack(frame3, mask=mask4, **feature_params)
+                    #plist.append(p4)
+                    #p5 = cv2.goodFeaturesToTrack(frame3, mask=mask5, **feature_params)
+                    #plist.append(p5)
+                    #p6 = cv2.goodFeaturesToTrack(frame3, mask=mask6, **feature_params)
+                    #plist.append(p6)
 
                     for p in plist:
                         if p is not None:

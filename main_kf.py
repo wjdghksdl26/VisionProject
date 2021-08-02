@@ -40,7 +40,7 @@ class App:
         self.tracks = deque()
         self.vid = videoPath
         self.frame_idx = 0
-        self.initiate_kalmanFilter = 5
+        self.initiate_kalmanFilter = 4
 
     def run(self):
         # images for initialization
@@ -177,9 +177,9 @@ class App:
                     thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
-                    for tr in self.tracks:
-                            cv2.circle(vis, tuple(np.int32(tr[-1])), 2, (0, 0, 255), -1)
-                    cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
+                    #for tr in self.tracks:
+                    #        cv2.circle(vis, tuple(np.int32(tr[-1])), 2, (0, 0, 255), -1)
+                    #cv2.polylines(vis, [np.int32(tr) for tr in self.tracks], False, (0, 255, 0))
 
                 # in case of motion compensation failure
                 if len(dst23) < 12:
@@ -282,7 +282,7 @@ class App:
                             #cv2.circle(thold1, c, 1, (0, 0, 255), 2)
 
                     # clustering
-                    centers, sizels = clusterWithSize(ls, thresh=150)
+                    centers, sizels = clusterWithSize(ls, thresh=50)
                     #for c in centers:
                     #    cv2.circle(thold1, (int(c[0]), int(c[1])), 1, (255, 0, 0), 2)
 
@@ -335,7 +335,7 @@ class App:
                 # draw
                 #final = np.hstack((vis, merged, thold1))
                 
-                #final = np.hstack((vis, thold1))
+                final = np.hstack((vis, thold1))
                 cv2.imshow("frame", vis)
 
             # waitkey

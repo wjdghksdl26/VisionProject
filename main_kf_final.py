@@ -40,17 +40,22 @@ class App:
         self.tracks = deque()
         self.vid = videoPath
         self.frame_idx = 0
-        self.initiate_kalmanFilter = 6
+        self.initiate_kalmanFilter = 16
+
+        self.fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+        self.out = cv2.VideoWriter('result.mp4', self.fourcc, 60.0, (580, 126))
 
     def run(self):
         # images for initialization
         ret, frame1 = self.vid.read()
-        frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+        oframe1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+        frame1 = oframe1[:, :367]
         if args["video"] != "cam":
             frame1 = imutils.resize(frame1, width=320)
 
         ret, frame2 = self.vid.read()
-        frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+        oframe2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+        frame2 = oframe2[:, :367]
         if args["video"] != "cam":
             frame2 = imutils.resize(frame2, width=320)
 
@@ -90,7 +95,7 @@ class App:
         totalFPS = 0
 
         # object tracker initialization
-        tracker = Tracker()
+        tracker = Tracker(dist_thresh=200, track_start_length=2)
 
         # main loop
         while True:
@@ -98,17 +103,19 @@ class App:
             print("Frame", self.frame_idx)
 
             # read and process frame
-            ret, frame3 = self.vid.read()
+            ret, oframe3 = self.vid.read()
+            oframe3 = cv2.cvtColor(oframe3, cv2.COLOR_BGR2GRAY)
             if not ret:
                 print("End of video stream!")
                 break
             if args["video"] != "cam":
+                frame3 = oframe3[:, :367]
                 frame3 = imutils.resize(frame3, width=320)
 
             # current frame
             vis = frame3.copy()
             #vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
-            frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2GRAY)
+            
 
             # copy of current frame (for visualization)
             vis = vis[15:h-15, 15:w-15]
@@ -171,9 +178,11 @@ class App:
                     # ---------- essential operations finished ----------
 
                     # thresholding
-                    thold1 = merged.copy()
-                    thold1 = cv2.erode(thold1, kernel, iterations=1)
-                    _, thold1 = cv2.threshold(thold1, 45, 255, cv2.THRESH_BINARY)
+                    thold1 = oframe3[:, 367:]
+                    thold1 = imutils.resize(thold1, width=320)
+                    thold1 = thold1[15:h - 15, 15:w - 15]
+                    #thold1 = cv2.erode(thold1, kernel, iterations=1)
+                    _, thold1 = cv2.threshold(thold1, 10, 255, cv2.THRESH_BINARY)
                     thold1 = cv2.dilate(thold1, kernel, iterations=2)
 
                     # draw flow
@@ -291,6 +300,7 @@ class App:
                 print("Before KF update", objs)
                 
                 merged = cv2.cvtColor(merged, cv2.COLOR_GRAY2BGR)
+                vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
 
                 # Apply Kalman filter to tracking results
                 for ID in tracker.objects_TF:
@@ -335,8 +345,10 @@ class App:
                 # draw
                 #final = np.hstack((vis, merged, thold1))
                 
+                
                 final = np.hstack((vis, thold1))
                 cv2.imshow("frame", final)
+                self.out.write(final)
 
             # waitkey
             k = cv2.waitKey(10) & 0xFF
@@ -355,6 +367,7 @@ class App:
 
         # terminate
         self.vid.release()
+        self.out.release()
         print("Average FPS :", round(totalFPS/self.frame_idx, 1))
 
 
